@@ -62,7 +62,7 @@ if loadResult is True :
     i = 0
     for width in pulseWidth:
         # Square pulse with nbSamples elements
-        pulseData = np.ones(int(width))
+        pulseData = np.ones(int(width)
         # Add that square pulse instruction to XACC
         pulseName = 'square' + str(width)
         xacc.addPulse(pulseName, pulseData)   
