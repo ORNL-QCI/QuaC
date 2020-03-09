@@ -184,10 +184,12 @@ struct SimResult
     std::vector<double> finalPopulations;
     std::vector<TimeSteppingData> tsData; 
     std::vector<std::complex<double>> dmDiagElems;
-    
+    // If not empty, absolute path to the csv file
+    // that contains time-stepping data
+    std::string csvFileName;
     template<class Archive>
     void serialize(Archive& archive)
     {
-        archive(finalPopulations, tsData, dmDiagElems); 
+        archive(finalPopulations, tsData, dmDiagElems, csvFileName); 
     }
 };

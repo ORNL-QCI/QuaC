@@ -3,17 +3,19 @@
 #include <iomanip>
 #include <fstream>
 #include <cassert>
+#include <unistd.h>
+#include <limits.h>
 
 extern "C" {
 #include "interface_xacc_ir.h"
 }
 
 namespace {
-    void writeTimesteppingDataToCsv(const std::string& in_fileName, const TSData* const in_tsData, int in_nbSteps, int in_nbQubits)
+    std::string writeTimesteppingDataToCsv(const std::string& in_fileName, const TSData* const in_tsData, int in_nbSteps, int in_nbQubits)
     {
         if (in_nbSteps < 1)
         {
-            return;
+            return "";
         }
 
         const auto stringEndsWith = [](const std::string& in_string, const std::string& in_ending) {
@@ -43,7 +45,7 @@ namespace {
         if(!outputFile.is_open())
         {
             std::cout << "Cannot open CSV file '" << fileName << "' for writing!\n";
-            return;
+            return "";
         }
 
         const auto nbChannels = in_tsData[0].nbChannels;      
@@ -95,7 +97,16 @@ namespace {
             outputFile << "\n";
         }
         outputFile.close();
-        std::cout << "Time-stepping data is written to file '" << fileName << "'\n";
+
+        char currentDirectory[PATH_MAX];
+        if (getcwd(currentDirectory, sizeof(currentDirectory)) != NULL) 
+        {
+            fileName = std::string(currentDirectory) + "/" + fileName;
+            std::cout << "Time-stepping data is written to file '" << fileName << "'\n";
+            return fileName;
+        } 
+
+        return "";
     } 
 }
 
@@ -243,13 +254,13 @@ void StartTimestepping::execute(SerializationType* out_result)
     // There is no point running time stepping w/o getting the result.
     assert(out_result != nullptr);
     
+    SimResult finalResult;
     // If there are time-stepping data recorded
     if (nbSteps > 0)
     {
-        writeTimesteppingDataToCsv("output", tsData, nbSteps, resultSize);
+        finalResult.csvFileName = writeTimesteppingDataToCsv("output", tsData, nbSteps, resultSize);
     }
-
-    SimResult finalResult;
+    
     // Population (occupation expectation) for each qubit
     for (int i = 0; i < resultSize; ++i)
     {

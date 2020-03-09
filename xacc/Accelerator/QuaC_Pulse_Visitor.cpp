@@ -554,7 +554,12 @@ namespace QuaC {
       // Population (occupation expectation) for each qubit
       const auto&  finalPopulations = simResult.finalPopulations;
       m_buffer->addExtraInfo("<O>", finalPopulations);
-      
+      if (!simResult.csvFileName.empty())
+      {
+         // Add link to the csv file (if any)
+         m_buffer->addExtraInfo("csvFile", simResult.csvFileName);
+      }
+
       // If the buffer has the "Concurrence" info key, fill in that field
       if (m_buffer->hasExtraInfoKey("Concurrence"))
       {

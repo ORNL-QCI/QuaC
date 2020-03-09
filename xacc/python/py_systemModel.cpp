@@ -62,6 +62,7 @@ PYBIND11_MODULE(_pyquaC, m)
         .def("setQubitT1", (void(QuaC::PulseSystemModel::*)(size_t, double)) & QuaC::PulseSystemModel::setQubitT1, "Set T1 of a qubit")
         .def("getQubitT1", (double(QuaC::PulseSystemModel::*)(size_t)) & QuaC::PulseSystemModel::getQubitT1, "Get T1 of a qubit")
         .def("loadHamiltonianJson", (bool(QuaC::PulseSystemModel::*)(const std::string&)) & QuaC::PulseSystemModel::loadHamiltonianJson, "Load Hamiltonian from JSON")
-        .def("setChannelConfigs", (void(QuaC::PulseSystemModel::*)(const BackendChannelConfigs&)) & QuaC::PulseSystemModel::setChannelConfigs, "Set backend channel configurations");
+        .def("setChannelConfigs", (void(QuaC::PulseSystemModel::*)(const BackendChannelConfigs&)) & QuaC::PulseSystemModel::setChannelConfigs, "Set backend channel configurations")
+        .def("setQubitInitialPopulation", (void(QuaC::PulseSystemModel::*)(size_t, double)) & QuaC::PulseSystemModel::setQubitInitialPopulation, "Set initial state of qubit");
     
 }
