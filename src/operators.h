@@ -63,6 +63,10 @@ void print_dense_ham();
 void set_initial_pop(operator,double);
 void combine_ops_to_mat(Mat*,int,...);
 
+
+// Multiply two operators on the same sub-system
+// to a matrix
+void mult_ops_as_mat(Mat*,operator,operator);
 // Add a matrix corresponding to an operator subspace to the Hamiltonian
 void add_mat_to_ham(PetscScalar, operator, Mat);
 

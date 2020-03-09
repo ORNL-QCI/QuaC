@@ -1525,6 +1525,49 @@ void set_initial_pop(operator op1,double initial_pop){
   return;
 }
 
+void mult_ops_as_mat(Mat* out_matrix, operator op1, operator op2)
+{
+  if (op1->my_levels != op2->my_levels || op1->n_before != op2->n_before)
+  {
+    printf("ERROR! Must be operators on the same sub-system!\n");
+    exit(0);
+  }
+
+  int dim = op1->my_levels; 
+  MatCreate(PETSC_COMM_WORLD, out_matrix);
+  MatSetType(*out_matrix, MATMPIAIJ);
+  MatSetSizes(*out_matrix, dim, dim, dim, dim);  
+  MatSetFromOptions(*out_matrix);
+  MatMPIAIJSetPreallocation(*out_matrix, 5, NULL, 5, NULL);
+ 
+  int my_levels = op1->my_levels;
+  long loop_limit1 = _get_loop_limit(op1->my_op_type, op1->my_levels);
+  for (int i = 0; i < my_levels - loop_limit1; i++)
+  {
+    long outRow1, outCol1;
+    PetscScalar valOp1 = _get_val_in_subspace(i, op1->my_op_type, op1->position, &outRow1, &outCol1);
+    long loop_limit2 = _get_loop_limit(op2->my_op_type, op2->my_levels);
+    for (int j = 0; j < my_levels - loop_limit2; j++)
+    {
+      long outRow2, outCol2;
+      PetscScalar valOp2 = _get_val_in_subspace(j, op2->my_op_type, op2->position, &outRow2, &outCol2);
+      if (outCol1 == outRow2)
+      {
+        PetscScalar opVal = valOp1 * valOp2;
+        if (PetscAbsComplex(opVal) != 0.0) 
+        {
+          printf("Matrix[%ld, %ld] = %lf + i %lf \n", outRow1, outCol2, PetscRealPart(opVal), PetscImaginaryPart(opVal));
+          MatSetValue(*out_matrix, outRow1, outCol2, opVal, INSERT_VALUES);
+        }
+      }
+    }
+  }
+   
+  MatAssemblyBegin(*out_matrix, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(*out_matrix, MAT_FINAL_ASSEMBLY);
+  return;
+}
+
 void add_mat_to_ham(PetscScalar in_coeff, operator in_op, Mat in_mat)
 {
   if (in_op->my_op_type != LOWER)

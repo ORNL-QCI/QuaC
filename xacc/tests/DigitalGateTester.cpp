@@ -200,10 +200,11 @@ TEST(DigitalGateTester, testMixPulseDigital)
     channelConfigs.dt = 1.0;    
     channelConfigs.loFregs_dChannels.emplace_back(5.35);
     
-    // Optimal pulse for X(pi/2) of this system    
-    const double  gaussSigma = 27.7612; //ns 
-    // Add the Gaussian pulse
-    channelConfigs.addOrReplacePulse("gaussian", QuaC::GaussianPulse(total_samples, gaussSigma));    
+    // For this system: driving strength is set to
+    // const double g = 2.0*M_PI/100;  
+    // i.e. 100 sample = 2pi rotation
+    // we want pi/2 => square pulse of 25 samples
+    channelConfigs.addOrReplacePulse("square", QuaC::SquarePulse(25));     
     systemModel->setChannelConfigs(channelConfigs);
     
     // We run 10000 shots
@@ -212,7 +213,7 @@ TEST(DigitalGateTester, testMixPulseDigital)
 
     auto qubitReg = xacc::qalloc(1);    
     auto provider = xacc::getIRProvider("quantum");
-    auto compositeInst = provider->createComposite("test_hadamard_gaussian_pulse");
+    auto compositeInst = provider->createComposite("test_hadamard_square_pulse");
     
     // First Hadamard (Pulse)
     {
@@ -226,7 +227,7 @@ TEST(DigitalGateTester, testMixPulseDigital)
         }
         {
             // Add X(pi/2) pulse (Gaussian with optimal pulse width)
-            auto pulseInst = std::make_shared<xacc::quantum::Pulse>("gaussian", "d0");
+            auto pulseInst = std::make_shared<xacc::quantum::Pulse>("square", "d0");
             pulseInst->setBits({0});
             // Add the Gaussian pulse
             compositeInst->addInstruction(pulseInst);
@@ -259,7 +260,7 @@ TEST(DigitalGateTester, testMixPulseDigital)
         }
         {
             // Add X(pi/2) pulse (Gaussian with optimal pulse width)
-            auto pulseInst = std::make_shared<xacc::quantum::Pulse>("gaussian", "d0");
+            auto pulseInst = std::make_shared<xacc::quantum::Pulse>("square", "d0");
             pulseInst->setBits({0});
             // Add the Gaussian pulse
             compositeInst->addInstruction(pulseInst);

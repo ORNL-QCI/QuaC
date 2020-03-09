@@ -332,7 +332,8 @@ void XACC_QuaC_AddConstHamiltonianTerm2(const char* in_op1, int in_qubitIdx1, co
         // Handle a product term between two operators on the same qubit subspace
         Mat tempMat;
         // Construct the product matrix
-        combine_ops_to_mat(&tempMat, 2, GetQubitOperator(qubits[in_qubitIdx1], in_op1), GetQubitOperator(qubits[in_qubitIdx1], in_op2));
+        //combine_ops_to_mat(&tempMat, 2, GetQubitOperator(qubits[in_qubitIdx1], in_op1), GetQubitOperator(qubits[in_qubitIdx1], in_op2));
+        mult_ops_as_mat(&tempMat, GetQubitOperator(qubits[in_qubitIdx1], in_op1), GetQubitOperator(qubits[in_qubitIdx1], in_op2));
         PetscInt rows, cols;
         MatGetSize(tempMat, &rows, &cols);
         LOG_INFO("Product operator matrix size = %ld, %ld\n", rows, cols);
