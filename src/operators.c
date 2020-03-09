@@ -1556,7 +1556,7 @@ void mult_ops_as_mat(Mat* out_matrix, operator op1, operator op2)
         PetscScalar opVal = valOp1 * valOp2;
         if (PetscAbsComplex(opVal) != 0.0) 
         {
-          printf("Matrix[%ld, %ld] = %lf + i %lf \n", outRow1, outCol2, PetscRealPart(opVal), PetscImaginaryPart(opVal));
+          // printf("Matrix[%ld, %ld] = %lf + i %lf \n", outRow1, outCol2, PetscRealPart(opVal), PetscImaginaryPart(opVal));
           MatSetValue(*out_matrix, outRow1, outCol2, opVal, INSERT_VALUES);
         }
       }
