@@ -24,11 +24,9 @@ model = xacc.createPulseModel()
 loadResult = model.loadHamiltonianJson(json.dumps(hamiltonianJson))
 
 if loadResult is True:
-
     NB_SHOTS = 10000
     nSamples = 34.
     controlPulse = '0.062831853*exp(-t^2/(2*sigma^2))'
-
     # Run Quantum Optimal Control GOAT method to 
     # find gaussian pulse that approximates the X
     # gate on qubit 0
@@ -39,12 +37,13 @@ if loadResult is True:
                     'control-funcs':[controlPulse],
                     'control-H':['X0'],
                     'max-time':nSamples,
-                    'initial-parameters':[8.0]})
+                    'initial-parameters':[8.0]
+                }
+            )
     optimal_sigma = goat.optimize()[1][0]
-    
 
     # Create the pulse at the optimal guassian sigma
-    pulse = xacc.PulseFunc(controlPulse.replace('sigma', optimal_sigma, int(nSamples))
+    pulse = xacc.PulseFunc(controlPulse.replace('sigma', str(optimal_sigma)), int(nSamples))
 
     # Create the backend channel configuration
     channelConfigs = xacc.BackendChannelConfigs()
