@@ -505,17 +505,21 @@ PetscErrorCode g_tsDefaultMonitorFunc(TS ts, PetscInt step, PetscReal time, Vec 
                 get_expectation_value(dm, &expectY, 1, qubits[i]->sig_y);
                 // Pauli-Z
                 get_expectation_value(dm, &expectZ, 1, qubits[i]->sig_z);
-
-                g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3] = PetscRealPart(expectX);
-                g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3 + 1] = PetscRealPart(expectY);
-                g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3 + 2] = PetscRealPart(expectZ);
             }
             else
             {
-                g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3] = 0.0;
-                g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3 + 1] = 0.0;
-                g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3 + 2] = 0.0;
-            }     
+                // Use the *custom* extended Pauli expectation calculation for non-qubit sub-systems.
+                // Pauli-X
+                expectX = get_expectation_value_Pauli_ext(dm, qubits[i]->sig_x);
+                // Pauli-Y
+                expectY = get_expectation_value_Pauli_ext(dm, qubits[i]->sig_y);
+                // Pauli-Z
+                expectZ = get_expectation_value_Pauli_ext(dm, qubits[i]->sig_z);
+            }
+
+            g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3] = PetscRealPart(expectX);
+            g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3 + 1] = PetscRealPart(expectY);
+            g_timeSteppingData[g_nbStepCount].pauliExpectations[i*3 + 2] = PetscRealPart(expectZ);     
         }
 
         if (nid==0)

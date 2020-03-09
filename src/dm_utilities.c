@@ -1858,3 +1858,176 @@ void trace_dm(PetscScalar *trace_val,Vec dm){
 
   return;
 }
+
+
+// Adapt from _get_val_j_from_global_i to handle *extended* Pauli operators
+void _get_val_j_from_global_i_Pauli_ext(PetscInt i, operator this_op, PetscInt* j, PetscScalar* val)
+{
+  PetscInt i_sub, n_after, tmp_int, k1, k2, extra_after, j_i1, j_i2, i1, i2;
+  PetscScalar val_i1,val_i2;
+  extra_after = 1;
+  n_after = total_levels/(this_op->my_levels*this_op->n_before)*extra_after;
+  i_sub = i/n_after%this_op->my_levels; //Use integer arithmetic to get floor function
+  if (this_op->my_op_type == SIGMA_X)
+  {
+    /*
+      * SIGMA_X
+      * if (i==1)
+      *    i = 1 * n_af + k1 + k2*n_me*n_af
+      *    j = 0 * n_af + k1 + k2*n_me*n_af
+      * if (i==0)
+      *    i = 0 * n_af + k1 + k2*n_l*n_af
+      *    j = 1 * n_af + k1 + k2*n_l*n_af
+      * We work out k1 and k2 from i to get j.
+      */
+    if (i_sub == 0) 
+    {
+      tmp_int = i - 0 * n_after;
+      k2      = tmp_int/(this_op->my_levels*n_after);//Use integer arithmetic to get floor function
+      k1      = tmp_int%(this_op->my_levels*n_after);
+      *j = (0 + 1) * n_after + k1 + k2*this_op->my_levels*n_after;
+      *val   = 1.0;
+    } 
+    else if (i_sub == 1) 
+    {
+      tmp_int = i - (0 + 1) * n_after;
+      k2      = tmp_int/(this_op->my_levels*n_after);//Use integer arithmetic to get floor function
+      k1      = tmp_int%(this_op->my_levels*n_after);
+      *j = 0 * n_after + k1 + k2*this_op->my_levels*n_after;
+      *val   = 1.0;
+    } 
+    else 
+    {
+      //There is no nonzero value for given global i; return -1 as flag
+      *j = -1;
+      *val = 0.0;
+    }
+  } 
+  else if (this_op->my_op_type == SIGMA_Y)
+  {
+    /*
+      * SIGMA_Y
+      * if (i==1)
+      *    i = 1 * n_af + k1 + k2*n_me*n_af
+      *    j = 0 * n_af + k1 + k2*n_me*n_af
+      * if (i==0)
+      *    i = 0 * n_af + k1 + k2*n_l*n_af
+      *    j = 1 * n_af + k1 + k2*n_l*n_af
+      * We work out k1 and k2 from i to get j.
+      */
+    if (i_sub == 0) 
+    {
+      tmp_int = i - 0 * n_after;
+      k2      = tmp_int/(this_op->my_levels*n_after);//Use integer arithmetic to get floor function
+      k1      = tmp_int%(this_op->my_levels*n_after);
+      *j = (0 + 1) * n_after + k1 + k2*this_op->my_levels*n_after;
+      *val   = -PETSC_i;
+    } 
+    else if (i_sub == 1) 
+    {
+      tmp_int = i - (0+1) * n_after;
+      k2      = tmp_int/(this_op->my_levels*n_after);//Use integer arithmetic to get floor function
+      k1      = tmp_int%(this_op->my_levels*n_after);
+      *j = 0 * n_after + k1 + k2*this_op->my_levels*n_after;
+      *val   = PETSC_i;
+    } 
+    else 
+    {
+      //There is no nonzero value for given global i; return -1 as flag
+      *j = -1;
+      *val = 0.0;
+    }
+  } 
+  else if (this_op->my_op_type == SIGMA_Z)
+  {
+    /*
+      * SIGMA_Z
+      * diagonal, even in global space
+      * if (i==0) val = 1.0
+      * if (i==1) val = -1.0
+      * We work out k1 and k2 from i to get j.
+      */
+    if (i_sub == 0) 
+    {
+      *j = i;
+      *val = 1.0;
+    } else if (i_sub==1) 
+    {
+      *j = i;
+      *val = -1.0;
+    } 
+    else 
+    {
+      //There is no nonzero value for given global i; return -1 as flag
+      *j = -1;
+      *val = 0.0;
+    }
+  }
+}
+
+PetscScalar get_expectation_value_Pauli_ext(Vec in_rho, operator in_op)
+{
+  if (in_op->my_op_type != SIGMA_X && in_op->my_op_type != SIGMA_Y && in_op->my_op_type != SIGMA_Z)
+  {
+    // Not a Pauli op
+    return 0.0;
+  }
+  // TODO: we can optimize this further using the knowledge that in_op is a Pauli operator
+  // to quickly calculate the result.
+  // For now, just use the existing code (with modifications to support extended space)
+  PetscScalar trace_val = 0.0 + 0.0*PETSC_i;
+  PetscInt my_start, my_end;
+  VecGetOwnershipRange(in_rho, &my_start, &my_end);
+  
+  /*
+   * Find the range of j values stored on a core.
+   * Some columns will be shared by more than 1 core;
+   * In that case the core who has the first element
+   * of the row calculates that value, potentially
+   * communicating to get values it does not have
+  */
+  PetscInt my_j_start = my_start / total_levels; // Rely on integer division to get 'floor'
+  PetscInt my_j_end  = my_end / total_levels;
+
+  for (PetscInt i = my_j_start; i < my_j_end; i++)
+  {
+    PetscInt this_i = i; // The leading index which we check
+    PetscScalar op_val = 1.0;
+    PetscInt this_j = 0;
+    PetscScalar val = 0.0;
+    for (PetscInt j = 0; j < 1; j++)
+    {
+      _get_val_j_from_global_i_Pauli_ext(this_i, in_op, &this_j, &val); 
+      if (this_j < 0) 
+      {
+        /*
+         * Negative j says there is no nonzero value for a given this_i
+         * As such, we can immediately break the loop for i
+         */
+        op_val = 0.0;
+        break;
+      } 
+      else 
+      {
+        this_i = this_j;
+        op_val = op_val*val;
+      }
+    }
+    /*
+     * Check that this i is on this core;
+     * most of the time, it will be, but sometimes
+     * columns are split up by core.
+     */
+    PetscInt this_loc = total_levels*i + this_i;
+    if (this_loc >= my_start && this_loc<my_end) 
+    {
+      PetscScalar dm_element;
+      get_dm_element_local(in_rho, this_i, i, &dm_element);
+     
+      trace_val = trace_val + op_val*(dm_element);
+    }
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE, &trace_val, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD);
+  return trace_val;
+}

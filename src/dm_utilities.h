@@ -35,4 +35,10 @@ void add_ops_to_mat(Mat,PetscInt,PetscInt,...);
 void print_mat_sparse_to_file(Mat,char[]);
 void vadd_ops_to_mat(Mat,PetscInt,PetscInt,va_list);
 void trace_dm(PetscScalar*,Vec);
+
+// Calculate the *extended* Pauli expectation value for higher-dimensional
+// systems (e.g., qutrits)
+// This is done by extending the 2x2 Pauli matrix to the expected size
+// and filling the extended space with zeros.
+PetscScalar get_expectation_value_Pauli_ext(Vec, operator);
 #endif
