@@ -39,6 +39,9 @@ PYBIND11_MODULE(_pyquaC, m)
     .def("PulseFunc", [](const std::string& in_functionString, size_t in_nbSamples){
         return QuaC::PulseFunc(in_functionString, in_nbSamples);
     })
+    .def("PulseFunc", [](const std::string& in_functionString, size_t in_nbSamples, double dt){
+        return QuaC::PulseFunc(in_functionString, in_nbSamples, dt);
+    })
     .def("GaussianPulse", [](size_t in_nbSamples, double in_sigma) {
         return QuaC::GaussianPulse(in_nbSamples, in_sigma);
     })
