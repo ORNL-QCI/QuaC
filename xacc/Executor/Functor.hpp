@@ -19,18 +19,20 @@ struct InitializeFunctor: public FunctorBase
                         const std::vector<int>& in_qbitDims, 
                         const std::unordered_map<int, double>& in_qbitDecays = {}, 
                         const std::unordered_map<int, double>& in_qbitInitialPopulations = {},
-                        bool in_verbose = false);
+                        bool in_verbose = false,
+                        double in_monitorDt = -1.0);
     
     template<class Archive>
     void serialize(Archive& archive)
     {
-        archive(m_nbQubit, m_qbitDims, m_qbitDecays, m_qbitInitialPops, m_verbose); 
+        archive(m_nbQubit, m_qbitDims, m_qbitDecays, m_qbitInitialPops, m_verbose, m_monitorDt); 
     }
     int m_nbQubit;
     std::vector<int> m_qbitDims;
     std::vector<double> m_qbitDecays;
     std::vector<double> m_qbitInitialPops;
     bool m_verbose;
+    double m_monitorDt;
 };
 DECLARE_CORE_TYPE(FunctorBase, InitializeFunctor)
 

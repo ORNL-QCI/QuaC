@@ -250,11 +250,34 @@ namespace QuaC {
          }
 
          // Step 1: Initialize the QuaC solver
-         m_executor->PostFunctorAsync(std::make_unique<InitializeFunctor>(
-                        buffer->size(), 
-                        qubitDims, 
-                        qbitDecays, 
-                        initialPops));
+         bool loggingEnabled = false;
+         double loggingPeriod =  0.0;
+         // Check if user requests TS data (save to CSV)
+         if (in_params.keyExists<double>("logging-period")) 
+         {
+            loggingPeriod = in_params.get<double>("logging-period");
+            // Make sure the input value is correct
+            loggingEnabled = loggingPeriod > 0.0;
+         }
+
+         if (loggingEnabled)
+         {
+            m_executor->PostFunctorAsync(std::make_unique<InitializeFunctor>(
+                           buffer->size(), 
+                           qubitDims, 
+                           qbitDecays, 
+                           initialPops,
+                           false,
+                           loggingPeriod));
+         }
+         else
+         {
+            m_executor->PostFunctorAsync(std::make_unique<InitializeFunctor>(
+                           buffer->size(), 
+                           qubitDims, 
+                           qbitDecays, 
+                           initialPops));
+         }
       }
 
       {
@@ -274,7 +297,7 @@ namespace QuaC {
          {
             xacc::error("Invalid 'shots' parameter.");
          }
-      }    
+      }  
    }
 
    int PulseVisitor::GetChannelId(const std::string& in_channelName) 

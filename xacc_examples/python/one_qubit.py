@@ -42,6 +42,14 @@ model = xacc.createPulseModel()
 loadResult = model.loadHamiltonianJson(json.dumps(hamiltonianJson))
 
 if loadResult is True :
+    # Enable time-stepping data collection by setting 'logging-period',
+    # Note on how to pick a *good* logging period:
+    # LO freq = 1.0 => period of LO carrier = 1.0; 
+    # => use logging period of 0.15 to sample different parts of the carrier signal.
+    # i.e. record ~ 10 data points per sample (which is modulated by LO carrier)
+    # Data is saved to timestamped csv file.
+    # Use the following to request time-stepping data being exported to CSV file for each run.
+    # qpu = xacc.getAccelerator('QuaC', {'system-model': model.name(), 'shots': 1024, 'logging-period': 0.15 })    
     qpu = xacc.getAccelerator('QuaC', {'system-model': model.name(), 'shots': 1024 })
     channelConfig = xacc.BackendChannelConfigs()
     # dt (time between data samples)

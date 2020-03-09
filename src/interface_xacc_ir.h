@@ -62,6 +62,10 @@ XACC_QUAC_API void XACC_QuaC_SetInitialPopulation(int in_qubitIdx, double in_ini
 // Add a decay term (Lindblad)
 XACC_QUAC_API void XACC_QuaC_AddQubitDecay(int in_qubitIdx, double in_kappa);
 
+// Enable time-stepping data collection
+// Specify the dt (e.g. sample duration) to save data
+// The TS solver often has a much smaller dt which we don't want to get all data at each step.
+XACC_QUAC_API void XACC_QuaC_EnableTimeSteppingMonitor(double in_dt);
 // =========================================================================
 
 

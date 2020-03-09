@@ -8,12 +8,7 @@ extern "C" {
 #include "interface_xacc_ir.h"
 }
 
-// Export the time-stepping data to csv (e.g. for plotting)
-// Uncomment to get the data exported
-//#define EXPORT_TS_DATA_AS_CSV
-
 namespace {
-#ifdef EXPORT_TS_DATA_AS_CSV
     void writeTimesteppingDataToCsv(const std::string& in_fileName, const TSData* const in_tsData, int in_nbSteps, int in_nbQubits)
     {
         if (in_nbSteps < 1)
@@ -102,19 +97,20 @@ namespace {
         outputFile.close();
         std::cout << "Time-stepping data is written to file '" << fileName << "'\n";
     } 
-#endif
 }
 
 InitializeFunctor::InitializeFunctor(int in_nbQubit, 
                 const std::vector<int>& in_qbitDims, 
                 const std::unordered_map<int, double>& in_qbitDecays, 
                 const std::unordered_map<int, double>& in_qbitInitialPopulations,
-                bool in_verbose):
+                bool in_verbose,
+                double in_monitorDt):
     m_nbQubit(in_nbQubit),
     m_qbitDims(in_qbitDims),
     m_qbitDecays(m_nbQubit, 0.0),
     m_qbitInitialPops(m_nbQubit, 0.0),
-    m_verbose(in_verbose)  
+    m_verbose(in_verbose),
+    m_monitorDt(in_monitorDt)  
 {
     for (const auto& kv : in_qbitDecays) 
     {
@@ -141,7 +137,12 @@ void InitializeFunctor::execute(SerializationType* out_result)
     for (int i = 0; i < m_nbQubit; ++i)
     {
         XACC_QuaC_SetInitialPopulation(i, m_qbitInitialPops[i]);
-    }     
+    }    
+
+    if (m_monitorDt > 0.0)
+    {
+        XACC_QuaC_EnableTimeSteppingMonitor(m_monitorDt);
+    } 
 }
 
 AddHamiltonianTerm::AddHamiltonianTerm(const std::complex<double>& in_coeff, 
@@ -242,9 +243,11 @@ void StartTimestepping::execute(SerializationType* out_result)
     // There is no point running time stepping w/o getting the result.
     assert(out_result != nullptr);
     
-#ifdef EXPORT_TS_DATA_AS_CSV
-    writeTimesteppingDataToCsv("output", tsData, nbSteps, resultSize);
-#endif
+    // If there are time-stepping data recorded
+    if (nbSteps > 0)
+    {
+        writeTimesteppingDataToCsv("output", tsData, nbSteps, resultSize);
+    }
 
     SimResult finalResult;
     // Population (occupation expectation) for each qubit
