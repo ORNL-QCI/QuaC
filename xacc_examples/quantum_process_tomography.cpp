@@ -70,9 +70,9 @@ int main (int argc, char** argv) {
     // Note: since this circuit contains Pulse instructions (constructed via IR),
     // we don't want to perform circuit optimization on the QPT test circuits, hence set optimize-circuit flag to false.
     // (e.g. circuit optimization is based on graph which may not be able to handle circuits that have both pulse and gate instructions)
-    auto quaC = xacc::getAccelerator("QuaC", { std::make_pair("system-model", systemModel), std::make_pair("shots", NB_SHOTS), std::make_pair("optimize-circuit", false) });    
+    auto quaC = xacc::getAccelerator("QuaC", { std::make_pair("system-model", systemModel), std::make_pair("shots", NB_SHOTS) });    
     // Perform a QPT with QuaC
-    qpt->initialize({ std::make_pair("circuit", compositeInst), std::make_pair("accelerator", quaC)});
+    qpt->initialize({ std::make_pair("circuit", compositeInst), std::make_pair("accelerator", quaC), std::make_pair("optimize-circuit", false)});
     qpt->execute(qubitReg);    
 
     // Now, let's calculate the Fidelity b/w QuaC and reference (Qpp)

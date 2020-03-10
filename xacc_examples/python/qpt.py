@@ -1,7 +1,7 @@
-import xacc
 import os, json, sys, numpy as np
 from pathlib import Path
 sys.path.insert(1, str(Path.home()) + '/.xacc')
+import xacc
 
 # The Hamiltonian JSON object (OpenPulse format)
 hamiltonianJson = {
@@ -62,8 +62,8 @@ if loadResult is True:
 
     # Execute on QuaC Pulse Simulator
     quaC = xacc.getAccelerator(
-        'QuaC', {'system-model': model.name(), 'shots': NB_SHOTS, 'optimize-circuit': False})
-    qpt.initialize({'circuit': compositeInst, 'accelerator': quaC})
+        'QuaC', {'system-model': model.name(), 'shots': NB_SHOTS})
+    qpt.initialize({'circuit': compositeInst, 'accelerator': quaC, 'optimize-circuit': False})
     qpt.execute(qubitReg)
 
     # Results stored on qubitReg, use 
