@@ -1329,7 +1329,7 @@ void _check_initialized_A(){
      * (for printing and debugging purposes)
      */
     if (nid==0) {
-      printf("Operators created. Total Hilbert space size: %ld\n",total_levels);
+      // printf("Operators created. Total Hilbert space size: %ld\n",total_levels);
       if (_print_dense_ham){
         _hamiltonian = malloc(total_levels*sizeof(PetscScalar*));
         for (i=0;i<total_levels;i++){

@@ -203,7 +203,7 @@ namespace QuaC {
    void PulseVisitor::initialize(std::shared_ptr<AcceleratorBuffer> buffer, PulseSystemModel* in_systemModel, const HeterogeneousMap& in_params) 
    {
       // Debug
-      std::cout << "Initialize Pulse simulator \n";
+      // std::cout << "Initialize Pulse simulator \n";
       // Default execution mode is Single Process
       ExecutorType executorType =  ExecutorType::SingleProcess;
       if (in_params.stringExists("execution-mode")) 
@@ -510,7 +510,7 @@ namespace QuaC {
       // Initialize the channel controller with pulse and fc commands     
       m_pulseChannelController->Initialize(allPulseSchedules, allFcSchedules);
 
-      std::cout << "Pulse simulator: solving the Hamiltonian. \n";     
+      // std::cout << "Pulse simulator: solving the Hamiltonian. \n";     
       // Note: This dt is the solver step size (which may be adaptive),
       // this should be smaller than the Pulse dt (sample step size).
       double dt = m_pulseChannelController->GetBackendConfigs().dt/1000.0;
@@ -1058,7 +1058,7 @@ namespace QuaC {
 
    void PulseVisitor::finalize() 
    {     
-      std::cout << "Pulse simulator: Finalized. \n";
+      // std::cout << "Pulse simulator: Finalized. \n";
       m_executor->PostFunctorAsync(std::make_unique<FinalizeFunctor>());
    }
 }

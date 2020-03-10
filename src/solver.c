@@ -251,7 +251,7 @@ void time_step(Vec x, PetscReal init_time, PetscReal time_max,PetscReal dt,Petsc
   PetscLogStagePush(solve_stage);
   if (_lindblad_terms) {
     if (nid==0) {
-      printf("Lindblad terms found, using Lindblad solver.\n");
+      // printf("Lindblad terms found, using Lindblad solver.\n");
     }
     solve_A = full_A;
     if (_stiff_solver) {
@@ -378,7 +378,7 @@ void time_step(Vec x, PetscReal init_time, PetscReal time_max,PetscReal dt,Petsc
     /* Tell PETSc to assemble the matrix */
     MatAssemblyBegin(solve_A,MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(solve_A,MAT_FINAL_ASSEMBLY);
-    if (nid==0) printf("Matrix Assembled.\n");
+    // if (nid==0) printf("Matrix Assembled.\n");
 
     MatDuplicate(solve_A,MAT_COPY_VALUES,&AA);
     MatAssemblyBegin(AA,MAT_FINAL_ASSEMBLY);

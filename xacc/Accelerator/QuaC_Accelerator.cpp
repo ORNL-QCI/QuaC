@@ -30,7 +30,7 @@ namespace QuaC {
         else if (params.stringExists("system-model"))
         {
             // Request the system model as a service
-            std::cout << "Using system model: " << params.getString("system-model") << "\n";
+            // std::cout << "Using system model: " << params.getString("system-model") << "\n";
             auto serviceRef = xacc::getService<PulseSystemModel>(params.getString("system-model"));
             m_systemModel = std::shared_ptr<PulseSystemModel>(serviceRef.get(), [](PulseSystemModel* ptr){}); 
         }
