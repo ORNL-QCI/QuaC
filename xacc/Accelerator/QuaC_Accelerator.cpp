@@ -1,6 +1,5 @@
 #include "QuaC_Accelerator.hpp"
 #include "QuaC_Pulse_Visitor.hpp"
-#include "json.hpp"
 #include "Pulse.hpp"
 #include "PulseSystemModel.hpp"
 
@@ -81,103 +80,146 @@ namespace QuaC {
 
         auto provider = xacc::getIRProvider("quantum");
         auto j = nlohmann::json::parse(custom_json_config);
-        auto backends = j["backends"];
+        
+        const auto keyExists = [](const nlohmann::json& in_json, const std::string& in_key) {
+            return in_json.find(in_key) != in_json.end();
+        };
 
-        // Add frame change and acquire
+        // Note: There are currently two types of Json files that can be used to contribute pulse instructions here
+        // (1) A full pulse backend config file which includes the system dynamical model (aka Hamiltonian) and the *pulse library*
+        // (2) A subset of (1) which only contains the pulse library.
+        // In this contributeInstructions() method, we only need (2) but just in case the input Json file is of type (1),
+        // just look up the pulse library field accordingly.
+        
+        // Always add frame change and acquire instructions
         auto fc = std::make_shared<Pulse>("fc");
         xacc::contributeService("fc", fc);
         auto aq = std::make_shared<Pulse>("acquire");
         xacc::contributeService("acquire", aq);
 
-        for (auto it = backends.begin(); it != backends.end(); ++it) 
+        // This is a full config Json file:
+        if (keyExists(j, "backends"))
         {
-            // Get the pulse library
-            auto pulse_library = (*it)["specificConfiguration"]["defaults"]["pulse_library"];
-            int counter = 0;
-            for (auto pulse_iter = pulse_library.begin(); pulse_iter != pulse_library.end(); ++pulse_iter) 
+            auto backends = j["backends"];      
+            for (auto it = backends.begin(); it != backends.end(); ++it) 
             {
-                auto pulse_name = (*pulse_iter)["name"].get<std::string>();
-                auto samples = (*pulse_iter)["samples"].get<std::vector<std::vector<double>>>();
+                // Get the pulse library
+                auto pulse_library = (*it)["specificConfiguration"]["defaults"]["pulse_library"];
+                contributePulseInstructions(pulse_library);
 
-                // std::cout << counter << ", Pulse: " << pulse_name << " number of samples = " << samples.size() << " \n";
+                // Import command defs (sequence of pulses)
+                auto cmd_defs = (*it)["specificConfiguration"]["defaults"]["cmd_def"];
+                contributeCmdDefInstructions(cmd_defs);
+            }
+        }
+        else
+        {
+            // The Json is a pulse library only file
+            if (keyExists(j, "pulse_library"))
+            {
+                contributePulseInstructions(j["pulse_library"]);
+            }
+            if (keyExists(j, "cmd_def"))
+            {
+                contributeCmdDefInstructions(j["cmd_def"]);
+            }
+        }    
+    }
 
-                auto pulse = std::make_shared<xacc::quantum::Pulse>(pulse_name);
-                pulse->setSamples(samples);
-                xacc::contributeService(pulse_name, pulse);
-                counter++;
+    void QuaC_Accelerator::contributePulseInstructions(const nlohmann::json& in_pulseLibJson)
+    {
+        if (!in_pulseLibJson.is_array())
+        {
+            xacc::error("Pulse library must be an array object.\n");
+            return;
+        }
+
+        for (auto pulse_iter = in_pulseLibJson.begin(); pulse_iter != in_pulseLibJson.end(); ++pulse_iter) 
+        {
+            auto pulse_name = (*pulse_iter)["name"].get<std::string>();
+            auto samples = (*pulse_iter)["samples"].get<std::vector<std::vector<double>>>();
+            auto pulse = std::make_shared<xacc::quantum::Pulse>(pulse_name);
+            pulse->setSamples(samples);
+            xacc::contributeService(pulse_name, pulse);
+        }
+    }
+
+    void QuaC_Accelerator::contributeCmdDefInstructions(const nlohmann::json& in_cmdDefJson)
+    {
+        if (!in_cmdDefJson.is_array())
+        {
+            xacc::error("Pulse cmd-def list must be an array object.\n");
+            return;
+        }
+
+        auto provider = xacc::getIRProvider("quantum");
+        for (auto cmd_def_iter = in_cmdDefJson.begin(); cmd_def_iter != in_cmdDefJson.end(); ++cmd_def_iter) 
+        {
+            const auto cmd_def_name = (*cmd_def_iter)["name"].get<std::string>();
+            const auto qbits = (*cmd_def_iter)["qubits"].get<std::vector<std::size_t>>();
+
+            std::string tmpName = "pulse::" + cmd_def_name;
+            if (cmd_def_name != "measure")
+            {
+                for (const auto& qb : qbits)
+                {
+                    tmpName += "_" + std::to_string(qb);
+                }
+            }     
+            // Create a composite instruction for the command
+            auto cmd_def = provider->createComposite(tmpName);
+            // Add params if they are parameterized commands
+            if (cmd_def_name == "u3") 
+            {
+                cmd_def->addVariables({"P0", "P1", "P2"});
+            } 
+            else if (cmd_def_name == "u1") 
+            {
+                cmd_def->addVariables({"P0"});
+            } 
+            else if (cmd_def_name == "u2") 
+            {
+                cmd_def->addVariables({"P0", "P1"});
             }
 
-            // Import command defs (sequence of pulses)
-            auto cmd_defs = (*it)["specificConfiguration"]["defaults"]["cmd_def"];
-            for (auto cmd_def_iter = cmd_defs.begin(); cmd_def_iter != cmd_defs.end(); ++cmd_def_iter) 
+            auto sequence = (*cmd_def_iter)["sequence"];
+            for (auto seq_iter = sequence.begin(); seq_iter != sequence.end(); ++seq_iter) 
             {
-                const auto cmd_def_name = (*cmd_def_iter)["name"].get<std::string>();
-                const auto qbits = (*cmd_def_iter)["qubits"].get<std::vector<std::size_t>>();
+                const auto inst_name = (*seq_iter)["name"].get<std::string>();
+                auto inst = xacc::getContributedService<Instruction>(inst_name);
 
-                std::string tmpName = "pulse::" + cmd_def_name;
-                if (cmd_def_name != "measure")
+                if (inst_name != "acquire") 
                 {
-                    for (const auto& qb : qbits)
+                    const auto channel = (*seq_iter)["ch"].get<std::string>();
+                    const auto t0 = (*seq_iter)["t0"].get<int>();
+                    inst->setBits(qbits);
+                    inst->setChannel(channel);
+                    inst->setStart(t0);
+
+                    if ((*seq_iter).find("phase") != (*seq_iter).end()) 
                     {
-                        tmpName += "_" + std::to_string(qb);
-                    }
-                }     
-                // Create a composite instruction for the command
-                auto cmd_def = provider->createComposite(tmpName);
-                // Add params if they are parameterized commands
-                if (cmd_def_name == "u3") 
-                {
-                    cmd_def->addVariables({"P0", "P1", "P2"});
-                } 
-                else if (cmd_def_name == "u1") 
-                {
-                    cmd_def->addVariables({"P0"});
-                } 
-                else if (cmd_def_name == "u2") 
-                {
-                    cmd_def->addVariables({"P0", "P1"});
-                }
-
-                auto sequence = (*cmd_def_iter)["sequence"];
-                for (auto seq_iter = sequence.begin(); seq_iter != sequence.end(); ++seq_iter) 
-                {
-                    const auto inst_name = (*seq_iter)["name"].get<std::string>();
-                    auto inst = xacc::getContributedService<Instruction>(inst_name);
-
-                    if (inst_name != "acquire") 
-                    {
-                        const auto channel = (*seq_iter)["ch"].get<std::string>();
-                        const auto t0 = (*seq_iter)["t0"].get<int>();
-                        inst->setBits(qbits);
-                        inst->setChannel(channel);
-                        inst->setStart(t0);
-
-                        if ((*seq_iter).find("phase") != (*seq_iter).end()) 
+                        // we have phase too
+                        auto p = (*seq_iter)["phase"];
+                        if (p.is_string()) 
                         {
-                            // we have phase too
-                            auto p = (*seq_iter)["phase"];
-                            if (p.is_string()) 
-                            {
-                                // this is a variable we have to keep track of
-                                auto ptmp = p.get<std::string>();
-                                // get true variable
-                                ptmp.erase(std::remove_if(ptmp.begin(), ptmp.end(), [](char ch) { return ch == '(' || ch == ')'; }), ptmp.end());
-                                InstructionParameter phase(ptmp);
-                                inst->setParameter(0, phase);
-                            } 
-                            else 
-                            {
-                                InstructionParameter phase(p.get<double>());
-                                inst->setParameter(0, phase);
-                            }
+                            // this is a variable we have to keep track of
+                            auto ptmp = p.get<std::string>();
+                            // get true variable
+                            ptmp.erase(std::remove_if(ptmp.begin(), ptmp.end(), [](char ch) { return ch == '(' || ch == ')'; }), ptmp.end());
+                            InstructionParameter phase(ptmp);
+                            inst->setParameter(0, phase);
+                        } 
+                        else 
+                        {
+                            InstructionParameter phase(p.get<double>());
+                            inst->setParameter(0, phase);
                         }
                     }
-                    cmd_def->addInstruction(inst);
                 }
-                cmd_def->setBits(qbits);
-
-                xacc::contributeService(tmpName, cmd_def);
+                cmd_def->addInstruction(inst);
             }
+            cmd_def->setBits(qbits);
+            xacc::contributeService(tmpName, cmd_def);
         }
     }
 }

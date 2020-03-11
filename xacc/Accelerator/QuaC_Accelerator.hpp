@@ -3,6 +3,7 @@
 #include "Identifiable.hpp"
 #include "AllGateVisitor.hpp"
 #include "xacc.hpp"
+#include "json.hpp"
 
 using namespace xacc;
 using namespace xacc::quantum;
@@ -26,6 +27,10 @@ namespace QuaC {
         virtual const std::vector<std::string> configurationKeys() override { return {}; }
         virtual void execute(std::shared_ptr<AcceleratorBuffer> buffer, const std::shared_ptr<CompositeInstruction> compositeInstruction) override;
         virtual void execute(std::shared_ptr<AcceleratorBuffer> buffer, const std::vector<std::shared_ptr<CompositeInstruction>> compositeInstructions) override;
+    
+    private:
+        void contributePulseInstructions(const nlohmann::json& in_pulseLibJson);
+        void contributeCmdDefInstructions(const nlohmann::json& in_cmdDefJson);
     private:    
         HeterogeneousMap m_params;
         std::shared_ptr<PulseSystemModel> m_systemModel; 

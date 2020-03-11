@@ -58,7 +58,7 @@ namespace
 
 // Test Open Pulse: i.e. quantum gates by pulses
 // Test single qubit gates (square drive)
-TEST(SimpleTester, testXGate) 
+TEST(OpenPulseTester, testXGate) 
 {
     auto systemModel = std::make_shared<QuaC::PulseSystemModel>();
     // Params:
@@ -108,7 +108,7 @@ TEST(SimpleTester, testXGate)
     EXPECT_NEAR(prob1, 1.0, 0.1);
 }
 
-TEST(SimpleTester, testHadamardGate) 
+TEST(OpenPulseTester, testHadamardGate) 
 {
     auto systemModel = std::make_shared<QuaC::PulseSystemModel>();
     // Params:
@@ -173,7 +173,7 @@ TEST(SimpleTester, testHadamardGate)
 }
 
 // Test Gaussian drive
-TEST(SimpleTester, testGaussianDrive) 
+TEST(OpenPulseTester, testGaussianDrive) 
 {
     // Params:
     const int total_samples = 100;
@@ -230,7 +230,7 @@ TEST(SimpleTester, testGaussianDrive)
 
 // Do a frame change by PI, confirm that the gate is reverse.
 // i.e. X(pi/2) FC(pi) X(pi/2) = Identity (not a full X gate)
-TEST(SimpleTester, testFrameChangeCancel) 
+TEST(OpenPulseTester, testFrameChangeCancel) 
 {
     auto systemModel = std::make_shared<QuaC::PulseSystemModel>();
     // Params:
@@ -285,7 +285,7 @@ TEST(SimpleTester, testFrameChangeCancel)
 
 // Doing a pi/4 pulse, then pi phase change, then do pi/8 pulse.
 // => expect net rotation = pi/4 - pi/8 = pi/8 
-TEST(SimpleTester, testFrameChangeNet) 
+TEST(OpenPulseTester, testFrameChangeNet) 
 {
     auto systemModel = std::make_shared<QuaC::PulseSystemModel>();
     // Params:
@@ -344,7 +344,7 @@ TEST(SimpleTester, testFrameChangeNet)
 }
 
 // Test parsing of U channel formula from IBM Json
-TEST(SimpleTester, testUchannelCalc) 
+TEST(OpenPulseTester, testUchannelCalc) 
 {
     // Load cmd-def from IBM Json
     const std::string jsonConfigFile = std::string(GATEIR_TEST_FILE_DIR) + "/test_backends.json";
@@ -404,6 +404,37 @@ TEST(SimpleTester, testUchannelCalc)
         const auto crossResFreq = loFreqs[targetQubit];
         EXPECT_EQ(uFreqsCalc[i], crossResFreq);
     }
+}
+
+// Test Backend Json loading: pulse library only json
+TEST(OpenPulseTester, testLoadPulseLibJson) 
+{
+    // Note: this is another Json file which only contains pulse library
+    // and the pulses are different.
+    const std::string jsonConfigFile = std::string(GATEIR_TEST_FILE_DIR) + "/test_backend_pulse_lib.json";
+    std::ifstream backendFile(jsonConfigFile);
+    std::string jjson((std::istreambuf_iterator<char>(backendFile)), std::istreambuf_iterator<char>());
+    auto systemModel = std::make_shared<QuaC::PulseSystemModel>();
+    auto quaC = xacc::getAccelerator("QuaC", { std::make_pair("system-model", systemModel) });    
+    
+    // Don't know this pulse instruction
+    EXPECT_FALSE(xacc::hasContributedService<xacc::Instruction>("CR90m_u2_5e5e"));    
+    // Contribute instruction
+    quaC->contributeInstructions(jjson);     
+    // Should know it by now
+    EXPECT_TRUE(xacc::hasContributedService<xacc::Instruction>("CR90m_u2_5e5e"));    
+    auto inst = xacc::getContributedService<xacc::Instruction>("CR90m_u2_5e5e");
+    // This pulse should have 28 samples
+    EXPECT_EQ(inst->getSamples().size(), 28);
+    
+    // Test cmd-def
+    auto cx_0_1 = xacc::getContributedService<xacc::Instruction>("pulse::cx_0_1");
+    auto cx_0_1_comp = std::dynamic_pointer_cast<xacc::CompositeInstruction>(cx_0_1);
+    EXPECT_TRUE(cx_0_1_comp);
+    auto sub_cr = cx_0_1_comp->getInstruction(12);
+    EXPECT_EQ("u2", sub_cr->channel());
+    EXPECT_EQ("CR90m_u2_5e5e", sub_cr->name());
+    EXPECT_EQ(48, sub_cr->start());
 }
 
 int main(int argc, char **argv) 
