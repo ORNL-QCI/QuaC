@@ -12,7 +12,7 @@ enum class ExecutorType { SingleProcess, CommSpawn };
 constexpr int NUMBER_OF_MPI_PROCESSES = 4;
 // Static executor factory
 static ExecutorType g_executorType;
-FunctorExecutorBase* getGlobalExecutor(ExecutorType in_type)
+FunctorExecutorBase* getGlobalExecutor(ExecutorType in_type, int in_nbProcs = -1)
 {
    static std::unique_ptr<FunctorExecutorBase> g_executor;
 
@@ -25,8 +25,10 @@ FunctorExecutorBase* getGlobalExecutor(ExecutorType in_type)
             g_executor = std::make_unique<SingleProcessFunctorExecutor>();
             break;
          case ExecutorType::CommSpawn:
-            // For now, use a fixed number of processes for testing purposes
-            g_executor = std::make_unique<CommSpawnFunctorExecutor>(NUMBER_OF_MPI_PROCESSES);
+            // If a specific number of MPI processes was requested, set it accordingly.
+            // Otherwise, just use a default value.
+            const int nbProcs = in_nbProcs > 0 ? in_nbProcs : NUMBER_OF_MPI_PROCESSES;
+            g_executor = std::make_unique<CommSpawnFunctorExecutor>(nbProcs);
             break;
       }
 
@@ -206,9 +208,20 @@ namespace QuaC {
       // std::cout << "Initialize Pulse simulator \n";
       // Default execution mode is Single Process
       ExecutorType executorType =  ExecutorType::SingleProcess;
+      int nbProcs = -1;
       if (in_params.stringExists("execution-mode")) 
       {
-         const std::string requestedMode = in_params.getString("execution-mode");
+         // We use the format: 'MPI::nbProcs', e.g. 'MPI::8' for 8 MPI processes.
+         std::string requestedMode = in_params.getString("execution-mode");
+         if (requestedMode.length() > 3)
+         {
+            std::string nbProcsStr = requestedMode.substr(3);
+            if (nbProcsStr.length() >= 3 && nbProcsStr.substr(0, 2) == "::")
+            {
+               nbProcs = std::stoi(nbProcsStr.substr(2));
+            }
+         }
+         requestedMode = requestedMode.substr(0, 3);
          if (requestedMode  == "MPI" || requestedMode  == "mpi") 
          {
             xacc::warning("Enable MPI!\n");
@@ -216,9 +229,9 @@ namespace QuaC {
          }
       }    
      
-      m_executor = getGlobalExecutor(executorType);      
-      
+      m_executor = getGlobalExecutor(executorType, nbProcs); 
       auto provider = xacc::getIRProvider("quantum");
+      
       // Should create a hash name here:
       m_pulseComposite = provider->createComposite("PulseComposite");
       m_systemModel = in_systemModel;

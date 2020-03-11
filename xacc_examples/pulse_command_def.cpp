@@ -9,8 +9,8 @@
 // i.e., the Hamiltonian will be parsed directly from the Json file.
 // ============================================================================
 int main (int argc, char** argv) {
-	// Initialize the XACC Framework
-	xacc::Initialize(argc, argv);
+    // Initialize the XACC Framework
+    xacc::Initialize(argc, argv);
     // IBM 20-qubit device Poughkeepsie backend JSON
     const std::string jsonConfigFile = std::string(GATEIR_TEST_FILE_DIR) + "/test_backends.json";
     
@@ -41,7 +41,7 @@ int main (int argc, char** argv) {
     std::cout << "CNOT(q[0], q[1]): \n" << cx01->toString() << "\n";
     
     // Finalize the XACC Framework
-	xacc::Finalize();
+    xacc::Finalize();
 
-	return 0;
+    return 0;
 }
