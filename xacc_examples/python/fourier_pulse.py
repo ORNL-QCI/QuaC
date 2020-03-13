@@ -2,6 +2,9 @@ import sys, os, json, numpy as np
 from pathlib import Path
 sys.path.insert(1, str(Path.home()) + '/.xacc')
 import xacc
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # The Hamiltonian JSON object (OpenPulse format)
 # omega0 = 2*pi, rotation speed: 100ns -> pi pulse (assume dt = 1) 
@@ -13,7 +16,7 @@ hamiltonianJson = {
             "0": 2
         },
         "vars": {
-            "omega0": 0.0,
+            "omega0": 0.00,
             "omegaa": 0.02
         } 
 }
@@ -25,12 +28,12 @@ model = xacc.createPulseModel()
 loadResult = model.loadHamiltonianJson(json.dumps(hamiltonianJson))
 
 if loadResult is True :
-    qpu = xacc.getAccelerator('QuaC', {'system-model': model.name(), 'shots': 1024 })
+    qpu = xacc.getAccelerator('QuaC', {'system-model': model.name(), 'shots': 1024, 'logging-period': 0.1 })
     
     nSamples = 1000
     channelConfigs = xacc.BackendChannelConfigs()
     channelConfigs.dt = 0.1
-    channelConfigs.loFregs_dChannels = [0.0]
+    channelConfigs.loFregs_dChannels = [1e-128]
 
     fourierSeries = '''
         0.726924 + 
@@ -55,3 +58,25 @@ if loadResult is True :
 
     qpu.execute(qubitReg, composite)
     print(qubitReg)
+    # Retrieve time-stepping raw data
+    csvFile = qubitReg['csvFile']
+    data = np.genfromtxt(csvFile, delimiter = ',', dtype=float, names=True)
+    fig, ax = plt.subplots(2, 1, sharex=True, figsize = (8, 5))
+    plt.tight_layout()
+    ax[0].plot(data['Time'], data['Channel0'], 'b', label = '$D_0(t)$')
+    ax[1].plot(data['Time'], data['X0'], 'b', label = '$\\langle X \\rangle$')
+    ax[1].plot(data['Time'], data['Y0'], 'g', label = '$\\langle Y \\rangle$')
+    ax[1].plot(data['Time'], data['Z0'], 'r', label = '$\\langle Z \\rangle$')
+    ax[1].plot(data['Time'], data['Population0'], 'k', label = '$Prob(1)$')
+
+    ax[0].set_xlim([0, 100])
+    ax[0].set_ylim([-0.1, 2.0])
+    ax[1].set_xlim([0, 100])
+    ax[1].set_ylim([-1.1, 1.1])
+    ax[1].legend()
+    ax[1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), fancybox=True, shadow=True, ncol=5)
+    ax[0].legend()
+    ax[1].set_xlabel('Time')
+    plt.gcf().subplots_adjust(bottom=0.1)
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    plt.savefig('Fourier_Pulse_Response.pdf')
