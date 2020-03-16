@@ -1,6 +1,10 @@
 set (LIBRARY_NAME _pyquaC)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 
+if(APPLE)
+   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+endif(APPLE)
+
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -O2 -g -pipe -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wformat -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -D_GNU_SOURCE -fPIC -fwrapv")
 add_library(${LIBRARY_NAME} SHARED py_systemModel.cpp)
 target_include_directories(${LIBRARY_NAME} PUBLIC ${Python_INCLUDE_DIRS} ${XACC_ROOT}/include/pybind11/include)
