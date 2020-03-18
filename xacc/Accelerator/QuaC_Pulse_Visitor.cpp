@@ -1074,4 +1074,18 @@ namespace QuaC {
       // std::cout << "Pulse simulator: Finalized. \n";
       m_executor->PostFunctorAsync(std::make_unique<FinalizeFunctor>());
    }
+
+   void PulseVisitor::retrievePulseSystemModel(std::shared_ptr<AcceleratorBuffer> buffer, PulseSystemModel* in_systemModel, const HeterogeneousMap& in_params)
+   {
+      std::string staticHamStr;
+      std::vector<std::string> ctrlHamTerms;
+      
+      for (const auto& term : in_systemModel->getHamiltonian().getTerms())
+      {
+         term->collect(staticHamStr, ctrlHamTerms);
+      }
+
+      buffer->addExtraInfo("static-H", staticHamStr);
+      buffer->addExtraInfo("control-H", ctrlHamTerms);
+   }
 }

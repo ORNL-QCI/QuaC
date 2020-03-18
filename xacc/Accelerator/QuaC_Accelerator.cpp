@@ -46,6 +46,15 @@ namespace QuaC {
 
     void QuaC_Accelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer, const std::shared_ptr<CompositeInstruction> compositeInstruction)  
     {
+        // Handle pulse-level IR transformation:
+        // In this mode: we will return the Hamiltonian in the buffer rather than executing the circuit.
+        // TODO: formalize this key
+        if (buffer->hasExtraInfoKey("ir-transform") && compositeInstruction == nullptr)
+        {
+            m_pulseVisitor->retrievePulseSystemModel(buffer, m_systemModel.get(), m_params);
+            return;
+        }
+        
         m_pulseVisitor->initialize(buffer, m_systemModel.get(), m_params);
         // Walk the IR tree, and visit each node
         InstructionIterator it(compositeInstruction);

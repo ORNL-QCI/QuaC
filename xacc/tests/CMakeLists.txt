@@ -29,3 +29,6 @@ endif()
 
 add_xacc_test(MultiLevel)
 target_link_libraries(MultiLevelTester xacc xacc_quac xacc::quantum_gate)
+
+add_xacc_test(IrTransform)
+target_link_libraries(IrTransformTester xacc xacc_quac xacc::quantum_gate)

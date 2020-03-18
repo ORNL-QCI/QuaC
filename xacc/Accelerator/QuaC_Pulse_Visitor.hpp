@@ -46,7 +46,8 @@ namespace QuaC {
         void visit(Identity& i) override;
         void visit(U& u) override;
         void visit(Pulse& p) override;
-
+        // Retrieve system dynamics (Hamiltonian) 
+        void retrievePulseSystemModel(std::shared_ptr<AcceleratorBuffer> buffer, PulseSystemModel* in_systemModel, const HeterogeneousMap& in_params);
     private:
         void schedulePulses(const std::shared_ptr<CompositeInstruction>& in_pulseInstruction);
         std::string generateResultBitString(const std::vector<std::complex<double>>& in_dmDiagonalElems) const;
