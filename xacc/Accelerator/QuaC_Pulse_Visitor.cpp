@@ -1079,13 +1079,16 @@ namespace QuaC {
    {
       std::string staticHamStr;
       std::vector<std::string> ctrlHamTerms;
+      std::vector<std::string> ctrlChannels;
       
       for (const auto& term : in_systemModel->getHamiltonian().getTerms())
       {
-         term->collect(staticHamStr, ctrlHamTerms);
+         term->collect(staticHamStr, ctrlHamTerms, ctrlChannels);
       }
 
       buffer->addExtraInfo("static-H", staticHamStr);
       buffer->addExtraInfo("control-H", ctrlHamTerms);
+      buffer->addExtraInfo("control-channels", ctrlChannels);
+      buffer->addExtraInfo("dt", in_systemModel->getChannelConfigs().dt);
    }
 }

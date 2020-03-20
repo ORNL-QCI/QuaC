@@ -71,7 +71,7 @@ public:
     virtual void apply(IChannelNameResolver* in_channelResolver, FunctorExecutorBase* in_executor) = 0;
     virtual ~HamiltonianTerm() {}
     virtual std::unique_ptr<HamiltonianTerm> clone() = 0;
-    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr) = 0;
+    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr, std::vector<std::string>& io_channelNames) = 0;
 };
 
 class HamiltonianSumTerm: public HamiltonianTerm
@@ -87,7 +87,7 @@ public:
     
     virtual std::unique_ptr<HamiltonianTerm> clone() override;
 
-    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr) override;
+    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr, std::vector<std::string>& io_channelNames) override;
 private:
     std::vector<std::unique_ptr<HamiltonianTerm>> m_terms;
 };
@@ -106,7 +106,7 @@ public:
 
     virtual std::unique_ptr<HamiltonianTerm> clone() override;
 
-    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr) override;
+    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr, std::vector<std::string>& io_channelNames) override;
 
 private:
     std::complex<double> m_coefficient;
@@ -135,7 +135,7 @@ public:
     
     virtual std::unique_ptr<HamiltonianTerm> clone() override;
 
-    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr) override;
+    virtual void collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr, std::vector<std::string>& io_channelNames) override;
 
 private:
     std::string m_channelName;

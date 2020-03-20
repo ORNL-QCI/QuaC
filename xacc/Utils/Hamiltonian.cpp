@@ -488,17 +488,22 @@ void HamiltonianSumTerm::apply(IChannelNameResolver* in_channelResolver, Functor
     }
 }
 
-void HamiltonianTimeIndependentTerm::collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr)
+void HamiltonianTimeIndependentTerm::collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr, std::vector<std::string>& io_channelNames)
 {
     if (m_operators.size() > 2)
     {
         xacc::error("We only support Hamiltonian terms which are products of maximum two operators.");
     }
-    
+    // Don't need to add zero term
+    if (std::abs(m_coefficient) < 1e-12)
+    {
+        return;
+    }
+
     if (m_operators.size() == 1)
     {
         const auto op = m_operators.front();        
-        const std::string hStr =  "+ " + std::to_string(m_coefficient.real()) + "*" + OperatorToString(op.first) + std::to_string(op.second);
+        const std::string hStr =  "+ " + std::to_string(m_coefficient.real()) + " " + OperatorToString(op.first) + std::to_string(op.second);
         // Debug:
         std::cout << "add static H string: " << hStr << "\n";
         io_staticHstr.append(hStr);
@@ -508,7 +513,7 @@ void HamiltonianTimeIndependentTerm::collect(std::string& io_staticHstr, std::ve
         const auto op1 = m_operators[0];
         const auto op2 = m_operators[1];
        
-        const std::string hStr =  "+ " + std::to_string(m_coefficient.real()) + "*" + 
+        const std::string hStr =  "+ " + std::to_string(m_coefficient.real()) + " " + 
             OperatorToString(op1.first) + std::to_string(op1.second) +
             OperatorToString(op2.first) + std::to_string(op2.second) ;
         
@@ -518,14 +523,15 @@ void HamiltonianTimeIndependentTerm::collect(std::string& io_staticHstr, std::ve
     }
 }
 
-void HamiltonianTimeDependentTerm::collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr)
+void HamiltonianTimeDependentTerm::collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr, std::vector<std::string>& io_channelNames)
 {
     // We only support multiplication of up to two operators
     assert(m_operators.size() == 1 || m_operators.size() == 2);
+    io_channelNames.emplace_back(m_channelName);
     if (m_operators.size() == 1)
     {
         const auto op = m_operators.front();          
-        const std::string hStr =  std::to_string(m_coefficient) + "*" + OperatorToString(op.first) + std::to_string(op.second);
+        const std::string hStr =  std::to_string(m_coefficient) + " " + OperatorToString(op.first) + std::to_string(op.second);
         // Debug:
         std::cout << "add control H string: " << hStr << "\n";
         io_ctrlHstr.emplace_back(hStr);      
@@ -535,7 +541,7 @@ void HamiltonianTimeDependentTerm::collect(std::string& io_staticHstr, std::vect
         const auto op1 = m_operators[0];
         const auto op2 = m_operators[1];
         
-        const std::string hStr =  std::to_string(m_coefficient) + "*" + 
+        const std::string hStr =  std::to_string(m_coefficient) + " " + 
             OperatorToString(op1.first) + std::to_string(op1.second) +
             OperatorToString(op2.first) + std::to_string(op2.second) ;
         
@@ -545,11 +551,11 @@ void HamiltonianTimeDependentTerm::collect(std::string& io_staticHstr, std::vect
     }    
 }
 
-void HamiltonianSumTerm::collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr)
+void HamiltonianSumTerm::collect(std::string& io_staticHstr, std::vector<std::string>& io_ctrlHstr, std::vector<std::string>& io_channelNames)
 {
     for (auto& term : m_terms)
     {
-        term->collect(io_staticHstr, io_ctrlHstr);
+        term->collect(io_staticHstr, io_ctrlHstr, io_channelNames);
     }
 }
 
@@ -580,7 +586,7 @@ std::unique_ptr<HamiltonianTerm> HamiltonianParsingUtil::tryParse(const std::str
         auto trySum = HamiltonianSumTerm::fromString(in_expr, in_vars);
         if (trySum)
         {
-            return std::move(trySum); 
+            return trySum; 
         }
     }
     
@@ -589,7 +595,7 @@ std::unique_ptr<HamiltonianTerm> HamiltonianParsingUtil::tryParse(const std::str
     
         if (tryTimeDep)
         {
-            return std::move(tryTimeDep);
+            return tryTimeDep;
 
         }
     }
@@ -599,7 +605,7 @@ std::unique_ptr<HamiltonianTerm> HamiltonianParsingUtil::tryParse(const std::str
     
         if (tryTimeInd)
         {
-            return std::move(tryTimeInd);
+            return tryTimeInd;
         }
     }
     
