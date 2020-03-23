@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "xacc.hpp"
 #include "PulseSystemModel.hpp"
+#include "CommonGates.hpp"
 
 TEST(IrTransformTester, checkSimple) 
 {
@@ -30,7 +31,10 @@ TEST(IrTransformTester, checkSimple)
     channelConfigs.loFregs_dChannels.emplace_back(0.0);      
     systemModel->setChannelConfigs(channelConfigs);
     // Get QuaC accelerator
-    auto quaC = xacc::getAccelerator("QuaC", { std::make_pair("system-model", systemModel) });    
+    auto quaC = xacc::getAccelerator("QuaC", { 
+      std::make_pair("system-model", systemModel), 
+      std::make_pair("shots", 10000) 
+    });    
 
     auto xasmCompiler = xacc::getCompiler("xasm");
     // A *complex* way to do X gate (H-Z-H)
@@ -56,14 +60,26 @@ TEST(IrTransformTester, checkSimple)
     };
 
     auto opt = xacc::getIRTransformation("quantum-control");
-    opt->apply(program, quaC, configs);
-    // This should be a pulse now
-    std::cout << "Optimized programed: \n" << program->toString() << "\n";
-    // Simulate the optimized pulse program
-    auto qubitReg = xacc::qalloc(1);    
-    quaC->execute(qubitReg, program);
-    // Should be an X gate
-    qubitReg->print();
+    if (opt) 
+    {
+      opt->apply(program, quaC, configs);
+      // This should be a pulse now
+      EXPECT_EQ(program->nInstructions(), 1);
+      EXPECT_TRUE(program->getInstruction(0)->isAnalog());
+      // Simulate the optimized pulse program
+      auto qubitReg = xacc::qalloc(1);    
+      // Add a measurement to get bit count statistics
+      auto meas = std::make_shared<xacc::quantum::Measure>(0);
+      program->addInstruction(meas);
+      quaC->execute(qubitReg, program);
+      // Should be an X gate
+      qubitReg->print();
+      // Check via bitstrings
+      const double prob0 = qubitReg->computeMeasurementProbability("0");
+      const double prob1 = qubitReg->computeMeasurementProbability("1");
+      EXPECT_NEAR(prob0, 0.0, 0.01);
+      EXPECT_NEAR(prob1, 1.0, 0.01);
+    }
 }
 
 int main(int argc, char **argv) 
