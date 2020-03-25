@@ -36,3 +36,7 @@ target_link_libraries(fourier_pulse PRIVATE xacc_quac xacc::quantum_gate)
 add_executable(mpi_demo mpi_demo.cpp)
 target_link_libraries(mpi_demo PRIVATE xacc_quac xacc::quantum_gate)
 target_compile_definitions(mpi_demo PRIVATE GATEIR_TEST_FILE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
+
+add_executable(calibrate_backend calibrate_backend.cpp)
+target_link_libraries(calibrate_backend PRIVATE xacc_quac xacc::quantum_gate)
+target_compile_definitions(calibrate_backend PRIVATE GATEIR_TEST_FILE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
