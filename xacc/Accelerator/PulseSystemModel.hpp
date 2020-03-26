@@ -37,6 +37,9 @@ public:
     
     // Try to load the Hamiltonian Json to initialize the Hamiltonian model.
     bool loadHamiltonianJson(const std::string& in_hamiltonianJsonString);
+
+    // Retrieve the OpenPulse Hamiltonian Json
+    std::string getHamiltonianJson() const { return m_hamJson; }
     
     // Set the channel configs 
     void setChannelConfigs(const BackendChannelConfigs& in_config);
@@ -63,5 +66,6 @@ private:
     std::unordered_map<std::string, std::shared_ptr<xacc::CompositeInstruction>> m_pulseCmdDefs;
     std::unordered_map<size_t, double> m_qubitToT1;
     std::unordered_map<size_t, double> m_qubitInitialPopulation;
+    std::string m_hamJson;
 };
 }

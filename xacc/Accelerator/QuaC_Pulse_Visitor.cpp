@@ -1090,5 +1090,9 @@ namespace QuaC {
       buffer->addExtraInfo("control-H", ctrlHamTerms);
       buffer->addExtraInfo("control-channels", ctrlChannels);
       buffer->addExtraInfo("dt", in_systemModel->getChannelConfigs().dt);
+      // Embed the full Hamiltonian JSON 
+      // This enables upstream services to connect pulse backend accelerators
+      // e.g. could be different types or just different instances of the same backend.
+      buffer->addExtraInfo("ham-json", in_systemModel->getHamiltonianJson());
    }
 }

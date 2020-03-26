@@ -137,6 +137,8 @@ bool PulseSystemModel::fromQobjectJson(const std::string& in_jsonString)
 
 bool PulseSystemModel::loadHamiltonianJson(const std::string& in_hamiltonianJsonString)
 {
+    // Cache the Hamiltonian Json string
+    m_hamJson = in_hamiltonianJsonString;
     return m_hamiltonian.fromJson(in_hamiltonianJsonString);
 }
 
