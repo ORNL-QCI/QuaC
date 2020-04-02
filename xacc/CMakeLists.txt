@@ -14,7 +14,7 @@ set (LIBRARY_NAME xacc_quac)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 file (GLOB HEADERS *.hpp)
-file (GLOB SRC *.cpp Accelerator/*.cpp Utils/*.cpp)
+file (GLOB SRC *.cpp Accelerator/*.cpp Utils/*.cpp Backend/*.cpp)
 
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
 usFunctionGenerateBundleInit(TARGET ${LIBRARY_NAME} OUT SRC)
@@ -46,6 +46,7 @@ target_include_directories(${LIBRARY_NAME} PUBLIC   .
                                                     ./Accelerator
                                                     ./Utils
                                                     ./Executor
+                                                    ./Backend
                                                     ${QUAC_INCLUDE_DIRS}
                                                     ${XACC_QUAC_BASE_INCLUDE_DIR}
                                                     ${XACC_ROOT}/include)

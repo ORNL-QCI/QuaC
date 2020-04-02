@@ -2,41 +2,54 @@
 #include "QuaC_Pulse_Visitor.hpp"
 #include "Pulse.hpp"
 #include "PulseSystemModel.hpp"
-
+#include "BackendRegistry.hpp"
 namespace QuaC {
     void QuaC_Accelerator::initialize(const HeterogeneousMap& params)  
     {        
-        if (params.stringExists("config-json-path"))
+        if (params.stringExists("backend"))
         {
-            const auto jsonFileName = params.getString("config-json-path");
-            std::ifstream backendFile(jsonFileName);
-            std::string jjson((std::istreambuf_iterator<char>(backendFile)), std::istreambuf_iterator<char>());
-            // Contribute all the pulse instruction defined in the config file.
-            contributeInstructions(jjson);
-            m_systemModel = std::make_shared<PulseSystemModel>();
-            if (!m_systemModel->fromQobjectJson(jjson))
+            const auto backendName = params.getString("backend");
+            auto backendRegistry = xacc::getService<BackendRegistry>("default");
+            m_systemModel = backendRegistry->getSystemModel(backendName);
+            if (!m_systemModel)
             {
-                xacc::error("Failed to initialize pulse system model from the JSON file.");
-                return;
+                xacc::error("Invalid backend named '" + backendName + "' was requested.");
             }
-        }
-        else if (params.pointerLikeExists<PulseSystemModel>("system-model")) 
-        {
-            PulseSystemModel* systemModel = params.getPointerLike<PulseSystemModel>("system-model");
-            // we don't own this one, don't try to delete it.
-            m_systemModel = std::shared_ptr<PulseSystemModel>(systemModel , [](PulseSystemModel* ptr){});
-        } 
-        else if (params.stringExists("system-model"))
-        {
-            // Request the system model as a service
-            // std::cout << "Using system model: " << params.getString("system-model") << "\n";
-            auto serviceRef = xacc::getService<PulseSystemModel>(params.getString("system-model"));
-            m_systemModel = std::shared_ptr<PulseSystemModel>(serviceRef.get(), [](PulseSystemModel* ptr){}); 
         }
         else
         {
-            xacc::error("Either a PulseSystemModel object or a path to the JSON configs file is required.");
-            return;
+             if (params.stringExists("config-json-path"))
+            {
+                const auto jsonFileName = params.getString("config-json-path");
+                std::ifstream backendFile(jsonFileName);
+                std::string jjson((std::istreambuf_iterator<char>(backendFile)), std::istreambuf_iterator<char>());
+                // Contribute all the pulse instruction defined in the config file.
+                contributeInstructions(jjson);
+                m_systemModel = std::make_shared<PulseSystemModel>();
+                if (!m_systemModel->fromQobjectJson(jjson))
+                {
+                    xacc::error("Failed to initialize pulse system model from the JSON file.");
+                    return;
+                }
+            }
+            else if (params.pointerLikeExists<PulseSystemModel>("system-model")) 
+            {
+                PulseSystemModel* systemModel = params.getPointerLike<PulseSystemModel>("system-model");
+                // we don't own this one, don't try to delete it.
+                m_systemModel = std::shared_ptr<PulseSystemModel>(systemModel , [](PulseSystemModel* ptr){});
+            } 
+            else if (params.stringExists("system-model"))
+            {
+                // Request the system model as a service
+                // std::cout << "Using system model: " << params.getString("system-model") << "\n";
+                auto serviceRef = xacc::getService<PulseSystemModel>(params.getString("system-model"));
+                m_systemModel = std::shared_ptr<PulseSystemModel>(serviceRef.get(), [](PulseSystemModel* ptr){}); 
+            }
+            else
+            {
+                xacc::error("Either a PulseSystemModel object or a path to the JSON configs file is required.");
+                return;
+            }
         }
         
         assert(m_systemModel);
