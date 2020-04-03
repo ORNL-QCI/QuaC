@@ -14,8 +14,6 @@ public:
     Default2Q() 
     {
         // Hamiltonian: full two-qubit transmon Hamiltonian (includes the coupling terms)
-        // We turn-off j (Q-Q coupling) for the time being:
-        // "j": 0.062831853072
         const std::string hamiltonianJson = R"#(
             {
                 "description": "Two-qubit Hamiltonian.",
@@ -32,7 +30,7 @@ public:
                     "alpha0": -2.073451151369, 
                     "alpha1": -2.073451151369,
                     "r": 0.0314,
-                    "j": 0.0
+                    "j": 0.0062831853072
                 }
             }
         )#";
@@ -90,6 +88,30 @@ public:
             auto cmddef_u3_1 = provider->createComposite("pulse::u3_1");
             cmddef_u3_1->addVariables({"P0", "P1", "P2"});
             cmddef_u3_1->setBits({1});
+            {
+                auto fc_P0 = std::make_shared<xacc::quantum::Pulse>("fc", "d1");
+                xacc::InstructionParameter fcParameterP0("P0 + pi");
+                fc_P0->setParameter(0, fcParameterP0);
+                fc_P0->setStart(PULSE_PI_2_DURATION);
+
+                auto fc_P1 = std::make_shared<xacc::quantum::Pulse>("fc", "d1");
+                xacc::InstructionParameter fcParameterP1("P1 + 3*pi");
+                fc_P1->setParameter(0, fcParameterP1);
+                fc_P1->setStart(PULSE_PI_2_DURATION + PULSE_PI_2_DURATION);
+
+                auto fc_P2 = std::make_shared<xacc::quantum::Pulse>("fc", "d1");
+                xacc::InstructionParameter fcParameterP2("P2");
+                fc_P2->setParameter(0, fcParameterP2);
+                fc_P2->setStart(0);
+                
+                auto firstPulseX_Pi_2 = std::make_shared<xacc::quantum::Pulse>("X1_PI_2", "d1");
+                firstPulseX_Pi_2->setStart(0);
+                
+                auto secondPulseX_Pi_2 = std::make_shared<xacc::quantum::Pulse>("X1_PI_2", "d1");
+                secondPulseX_Pi_2->setStart(PULSE_PI_2_DURATION);
+                // Add pulse sequence to the cmd-def
+                cmddef_u3_1->addInstructions({fc_P2, firstPulseX_Pi_2, fc_P0, secondPulseX_Pi_2, fc_P1});
+            }
 
             auto cmddef_cx_0_1 = provider->createComposite("pulse::cx_0_1");
             cmddef_cx_0_1->setBits({0, 1});
