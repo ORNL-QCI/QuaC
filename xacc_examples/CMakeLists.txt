@@ -40,3 +40,7 @@ target_compile_definitions(mpi_demo PRIVATE GATEIR_TEST_FILE_DIR="${CMAKE_CURREN
 add_executable(calibrate_backend calibrate_backend.cpp)
 target_link_libraries(calibrate_backend PRIVATE xacc_quac xacc::quantum_gate)
 target_compile_definitions(calibrate_backend PRIVATE GATEIR_TEST_FILE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
+
+add_executable(ibmq_demo ibmq_demo.cpp)
+target_link_libraries(ibmq_demo PRIVATE xacc_quac xacc::quantum_gate)
+target_compile_definitions(ibmq_demo PRIVATE GATEIR_TEST_FILE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources")
