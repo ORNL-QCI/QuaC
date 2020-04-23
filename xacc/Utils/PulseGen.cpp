@@ -1,6 +1,7 @@
 #include "PulseGen.hpp"
 #include <math.h> 
 #include "exprtk/exprtk.hpp"
+#include <cassert>
 
 using symbol_table_t = exprtk::symbol_table<double>;
 using expression_t = exprtk::expression<double>;
@@ -43,4 +44,60 @@ namespace QuaC {
         }
         return result;
     }
+
+    // Analytical form: 
+    // (1) Rising edge:
+    // risefall = (duration - width) / 2
+    // 0 <= x < risefall
+    // f(x) = amp * exp( -(1/2) * (x - risefall/2)^2 / sigma^2) )
+    // (2) Square body:
+    // risefall <= x < risefall + width
+    // f(x) = amp
+    // (3) Falling edge:
+    // risefall + width <= x < duration
+    // f(x) = amp * exp( -(1/2) * (x - (risefall + width)/2)^2 / sigma^2) )
+    std::vector<std::complex<double>> GaussianSquare(int in_duration, std::complex<double> in_amp, int in_sigma, int in_width)
+    {
+        assert(in_duration > in_width);
+        std::vector<std::complex<double>> result;
+        result.reserve(in_duration);
+        const int risefall = (in_duration - in_width) / 2;
+        for (int i = 0; i < risefall; ++i)
+        {
+            const auto val = in_amp * std::exp(-0.5*(i - risefall/2.0)*(i - risefall/2.0) / (in_sigma * in_sigma));
+            result.emplace_back(val);
+        }
+        for (int i = 0; i < in_width; ++i)
+        {
+            result.emplace_back(in_amp);
+        }
+        for (int i = result.size(); i < in_duration; ++i)
+        {
+            const auto val = in_amp * std::exp(-0.5*(i - (risefall + in_width)/2.0)*(i - (risefall + in_width)/2.0) / (in_sigma * in_sigma));
+            result.emplace_back(val);
+        }
+        return result;
+    }
+
+    std::vector<std::complex<double>> Drag(int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta)
+    {
+        std::vector<std::complex<double>> gaussian;
+        gaussian.reserve(in_duration);
+        const int mu = in_duration/2;
+        for (int i = 0; i < in_duration; ++i)
+        {
+            gaussian.emplace_back(in_amp*std::exp(-std::pow(1.0*i - mu, 2) / 2.0 / std::pow(in_sigma, 2.0)));
+        }
+
+        for (int i = 0; i < in_duration; ++i)
+        {
+            const auto x = gaussian[i];
+            static const std::complex<double> I {0.0, 1.0};
+            const std::complex<double> deriv_x = I*in_beta*(-(1.0*i - in_duration/2)/(in_sigma*in_sigma))*x;
+            gaussian[i] += deriv_x;
+        }
+
+        return gaussian;
+    }
+
 }
