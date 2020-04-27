@@ -58,23 +58,31 @@ namespace QuaC {
     // f(x) = amp * exp( -(1/2) * (x - (risefall + width)/2)^2 / sigma^2) )
     std::vector<std::complex<double>> GaussianSquare(int in_duration, std::complex<double> in_amp, int in_sigma, int in_width)
     {
+        const auto gaussCalc = [&](double in_time, double in_center) {
+
+            const auto x = (in_time-in_center)/(1.0*in_sigma);
+            const auto gauss = in_amp*std::exp(-x*x/2.0);
+            return gauss;
+        };
+        
         assert(in_duration > in_width);
         std::vector<std::complex<double>> result;
         result.reserve(in_duration);
         const int risefall = (in_duration - in_width) / 2;
         for (int i = 0; i < risefall; ++i)
         {
-            const auto val = in_amp * std::exp(-0.5*(i - risefall/2.0)*(i - risefall/2.0) / (in_sigma * in_sigma));
-            result.emplace_back(val);
+            const double center = risefall;
+            result.emplace_back(gaussCalc(i, center));
         }
         for (int i = 0; i < in_width; ++i)
         {
             result.emplace_back(in_amp);
         }
-        for (int i = result.size(); i < in_duration; ++i)
+
+        const auto startFall = result.size();
+        for (int i = startFall; i < in_duration; ++i)
         {
-            const auto val = in_amp * std::exp(-0.5*(i - (risefall + in_width)/2.0)*(i - (risefall + in_width)/2.0) / (in_sigma * in_sigma));
-            result.emplace_back(val);
+            result.emplace_back(gaussCalc(i, startFall));
         }
         return result;
     }

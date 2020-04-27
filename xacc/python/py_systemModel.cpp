@@ -45,6 +45,12 @@ PYBIND11_MODULE(_pyquaC, m)
     .def("GaussianPulse", [](size_t in_nbSamples, double in_sigma) {
         return QuaC::GaussianPulse(in_nbSamples, in_sigma);
     })
+    .def("GaussianSquare", [](int in_duration, std::complex<double> in_amp, int in_sigma, int in_width) {
+        return QuaC::GaussianSquare(in_duration, in_amp, in_sigma, in_width);
+    })
+    .def("DragPulse", [](int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta) {
+        return QuaC::Drag(in_duration, in_amp, in_sigma, in_beta);
+    })
     .def("createPulse", [](const std::string& name, const std::string& channel) -> std::shared_ptr<xacc::Instruction> {
         return std::make_shared<xacc::quantum::Pulse>(name, channel);
     });
