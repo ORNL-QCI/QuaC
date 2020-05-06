@@ -37,7 +37,7 @@ public:
         loadHamiltonianJson(hamiltonianJson);
 
         BackendChannelConfigs channelConfigs;
-        const std::vector<double> d_loFreqs { 4.857, 4.972 };
+        const std::vector<double> d_loFreqs { 4.857, 4.97154 };
         const std::vector<double> u_loFreqs { 4.972, 4.857 };
         channelConfigs.dt = 0.222;
         channelConfigs.loFregs_dChannels = d_loFreqs;
@@ -192,7 +192,7 @@ public:
             auto cmddef_h_1 = provider->createComposite("pulse::h_1");
             cmddef_h_1->setBits({1});
             // These params are pre-calibrated (nl-opt)
-            const double ampl = 0.079270;
+            const double ampl = 0.0813729;
             const double beta = 1.0;
             const int nSamples = 121;
             const int gamma = 20;
@@ -226,7 +226,7 @@ public:
         // U3 gate
         {
             // These params are pre-calibrated (nl-opt)
-            const double ampl = 0.079270;
+            const double ampl = 0.0813729;
             const double beta = 1.0;
             const int nSamples = 121;
             const int gamma = 20;

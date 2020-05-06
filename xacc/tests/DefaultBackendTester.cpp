@@ -2,8 +2,8 @@
 #include "xacc.hpp"
 
 namespace {
-    // Tolerance epsilon for numerical errors
-    const double TOL_EPS = 0.1;
+    // Tolerance epsilon for numerical errors (1%)
+    const double TOL_EPS = 0.01;
 }
 
 TEST(DefaultBackendTester, checkSingleGateQ0) 
