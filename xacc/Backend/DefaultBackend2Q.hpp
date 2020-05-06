@@ -16,33 +16,74 @@ public:
         // Hamiltonian: full two-qubit transmon Hamiltonian (includes the coupling terms)
         const std::string hamiltonianJson = R"#(
             {
-                "description": "Two-qubit Hamiltonian.",
-                "h_latex": "",
-                "h_str": ["0.5*(2*v0-alpha0)*O0", "0.5*alpha0*O0*O0", "r*(SM0 + SP0)||D0", "r*(SM0 + SP0)||U1", "r*(SM1 + SP1)||U0", "0.5*(2*v1-alpha1)*O1", "0.5*alpha1*O1*O1", "r*(SM1 + SP1)||D1", "j*(Sp0*Sm1+Sm0*Sp1)"],
+                "description": "Two-qubit Hamiltonian",
+                "h_str": ["_SUM[i,0,1,wq{i}*O{i}]", "_SUM[i,0,1,delta{i}*O{i}*(O{i}-I{i})]", "_SUM[i,0,1,omegad{i}*X{i}||D{i}]", "omegad1*X0||U0", "omegad0*X1||U1", "jq0q1*Sp0*Sm1", "jq0q1*Sm0*Sp1"],
                 "osc": {},
                 "qub": {
                     "0": 2,
                     "1": 2
                 },
                 "vars": {
-                    "v0": 31.415926535898,
-                    "v1": 32.044245066616,
-                    "alpha0": -2.073451151369, 
-                    "alpha1": -2.073451151369,
-                    "r": 0.0314,
-                    "j": 0.0062831853072
+                    "wq0": 30.518812656662774, 
+                    "wq1": 31.238229295532093,
+                    "delta0": -2.011875935,
+                    "delta1": -2.008734343,
+                    "omegad0": -1.703999855,
+                    "omegad1": -1.703999855,
+                    "jq0q1": 0.011749557 
                 }
             }
         )#";
         loadHamiltonianJson(hamiltonianJson);
 
         BackendChannelConfigs channelConfigs;
-        channelConfigs.dt = 1.0;
-        channelConfigs.loFregs_dChannels.emplace_back(5.0);
-        channelConfigs.loFregs_dChannels.emplace_back(5.1);
-        channelConfigs.loFregs_uChannels.emplace_back(5.0);
-        channelConfigs.loFregs_uChannels.emplace_back(5.1);
+        const std::vector<double> d_loFreqs { 4.857, 4.972 };
+        const std::vector<double> u_loFreqs { 4.972, 4.857 };
+        channelConfigs.dt = 0.222;
+        channelConfigs.loFregs_dChannels = d_loFreqs;
+        channelConfigs.loFregs_uChannels = u_loFreqs;
+        auto provider = xacc::getIRProvider("quantum");
+
         // Pulse library set-up:
+        // ======== Single-qubit gate pulse =============     
+        // * Q0:
+        // X gate:
+        {
+            auto cmddef_x_0 = provider->createComposite("pulse::x_0");
+            cmddef_x_0->setBits({0});
+            // These params are pre-calibrated (nl-opt)
+            const double ampl = 0.169244;
+            const double beta = 1.0;
+            const double fcAngle = 1.56906;
+            const int nSamples = 121;
+            const int gamma = 20;
+
+            const std::string pulseName = "drag_" + std::to_string(ampl) + "_" + std::to_string(beta);
+            channelConfigs.addOrReplacePulse(pulseName, QuaC::Drag(nSamples, ampl, gamma, beta));
+            const std::string channelName = "d0";
+
+            auto pulse = std::make_shared<xacc::quantum::Pulse>(pulseName, channelName);
+            pulse->setBits({0});
+
+            auto fcPre = std::make_shared<xacc::quantum::Pulse>("fc", channelName);
+            xacc::InstructionParameter fcPreParameter(fcAngle);
+            fcPre->setParameter(0, fcPreParameter);
+            fcPre->setBits({0});
+
+            auto fcPost = std::make_shared<xacc::quantum::Pulse>("fc", channelName);
+            xacc::InstructionParameter fcPostParameter(-fcAngle);
+            fcPost->setParameter(0, fcPostParameter);
+            fcPost->setBits({0});
+            fcPost->setStart(nSamples);
+
+            cmddef_x_0->addInstructions({ fcPre, pulse, fcPost });
+            xacc::contributeService(cmddef_x_0->name(), cmddef_x_0);
+        }
+       
+
+        // ===============================================     
+
+        
         // PI/2 rotation
         const int PULSE_PI_2_DURATION = 50;
         channelConfigs.addOrReplacePulse("X0_PI_2", QuaC::SquarePulse(PULSE_PI_2_DURATION));
