@@ -594,8 +594,37 @@ int XACC_QuaC_GetDensityMatrixDiagElements(ComplexCoefficient** out_result)
     return densityMatrixDim;
 }
 
-XACC_QUAC_API void XACC_QuaC_EnableTimeSteppingMonitor(double in_dt)
+void XACC_QuaC_EnableTimeSteppingMonitor(double in_dt)
 {
     g_enableTimeSteppingDataCollection = true;
     g_monitorDt = in_dt;
+}
+
+double XACC_QuaC_CalcDensityMatrixFidelity(int in_size, ComplexCoefficient* in_refDm)
+{
+    double resultFidelity = 0.0;
+    // Make sure the dimension matched
+    if (in_size == densityMatrixDim*densityMatrixDim)
+    {
+        Vec refDm;
+        // Create a reference DM for fidelity calculations 
+        create_dm(&refDm, densityMatrixDim);
+        for (int rowIdx = 0; rowIdx < densityMatrixDim; ++rowIdx)
+        {
+            for (int colIdx = 0; colIdx < densityMatrixDim; ++colIdx)
+            {
+                int index = rowIdx*densityMatrixDim + colIdx;
+                ComplexCoefficient val = in_refDm[index];
+                add_value_to_dm(refDm, rowIdx, colIdx, val.real + val.imag * PETSC_i);
+            }
+        }
+        assemble_dm(refDm);
+
+        // Calculate the fidelity
+        get_fidelity(psi, refDm, &resultFidelity);
+
+        destroy_dm(refDm);
+    }
+
+    return resultFidelity;
 }

@@ -137,6 +137,24 @@ struct CalculateBipartiteConcurrence: public FunctorBase
 };
 DECLARE_CORE_TYPE(FunctorBase, CalculateBipartiteConcurrence)
 
+struct CalculateDmFidelity: public FunctorBase
+{
+    std::vector<std::complex<double>> dmElems;
+
+    virtual void execute(SerializationType* out_result = nullptr) override;
+    virtual std::string name() const override { return "CalculateDmFidelity"; }
+
+    CalculateDmFidelity(){};
+    CalculateDmFidelity(const std::vector<std::complex<double>>& in_refDm);
+
+    template<class Archive>
+    void serialize(Archive& archive) 
+    {
+        archive(dmElems); 
+    }
+};
+DECLARE_CORE_TYPE(FunctorBase, CalculateDmFidelity)
+
 
 struct GetDensityMatrixElement: public FunctorBase
 {

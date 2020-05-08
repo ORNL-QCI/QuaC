@@ -122,4 +122,7 @@ XACC_QUAC_API ComplexCoefficient XACC_QuaC_GetDensityMatrixElement(int in_row, i
 
 // Get diagonal elements of the density matrix
 XACC_QUAC_API int XACC_QuaC_GetDensityMatrixDiagElements(ComplexCoefficient** out_result);
+
+// Calc. fidelity of the result density matrix against a reference 
+XACC_QUAC_API double XACC_QuaC_CalcDensityMatrixFidelity(int in_size, ComplexCoefficient* in_refDm);
 // ==============================================================================================

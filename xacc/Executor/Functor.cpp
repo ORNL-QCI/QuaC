@@ -326,6 +326,28 @@ GetDensityMatrixElement::GetDensityMatrixElement(size_t in_row, size_t in_column
     m_column(in_column)
 {}
 
+void CalculateDmFidelity::execute(SerializationType* out_result)
+{
+    assert(out_result != nullptr);
+    std::vector<ComplexCoefficient> refVec;
+    refVec.reserve(dmElems.size());
+    for (const auto& x : dmElems)
+    {
+        ComplexCoefficient el;
+        el.real = x.real();
+        el.imag = x.imag();
+        refVec.emplace_back(el);
+    }
+
+    const double fidelityResult = XACC_QuaC_CalcDensityMatrixFidelity(dmElems.size(), refVec.data());
+    SerializationOutputDataType outArchive(*out_result); 
+    outArchive(fidelityResult); 
+}
+
+CalculateDmFidelity::CalculateDmFidelity(const std::vector<std::complex<double>>& in_refDm):
+    dmElems(in_refDm)
+{}
+
 void GetDensityMatrixElement::execute(SerializationType* out_result)
 {
     assert(out_result != nullptr);
