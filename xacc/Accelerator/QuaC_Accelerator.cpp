@@ -80,6 +80,26 @@ namespace QuaC {
             }
         }            
         m_pulseVisitor->solve();
+        
+        // If there is a target density matrix, 
+        // calculate the fidelity b/w the result Dm and target dm.
+        if (buffer->hasExtraInfoKey("target-dm-real") && buffer->hasExtraInfoKey("target-dm-imag"))
+        {
+            const std::vector<double> targetDmReal = (*buffer)["target-dm-real"].as<std::vector<double>>();
+            const std::vector<double> targetDmImag = (*buffer)["target-dm-imag"].as<std::vector<double>>();
+
+            assert(targetDmReal.size() == targetDmImag.size());
+            std::vector<std::complex<double>> targetDm;
+            targetDm.reserve(targetDmReal.size());
+            for (size_t i = 0; i < targetDmReal.size(); ++i)
+            {
+                targetDm.emplace_back(std::complex<double> { targetDmReal[i], targetDmImag[i] });
+            }
+
+            const auto fidelity = m_pulseVisitor->calcFidelity(targetDm);
+            buffer->addExtraInfo("fidelity", fidelity);
+        }
+
         m_pulseVisitor->finalize();
     }
 

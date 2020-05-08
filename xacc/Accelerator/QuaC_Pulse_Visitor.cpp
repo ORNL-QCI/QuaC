@@ -1095,4 +1095,14 @@ namespace QuaC {
       // e.g. could be different types or just different instances of the same backend.
       buffer->addExtraInfo("ham-json", in_systemModel->getHamiltonianJson());
    }
+
+   double PulseVisitor::calcFidelity(const std::vector<std::complex<double>>& in_refDm)
+   {
+      SerializationType resultData;
+      m_executor->CallFunctorSync(std::make_unique<CalculateDmFidelity>(in_refDm), resultData);            
+      double fidelityResult;
+      SerializationInputDataType inputSerialization(resultData); 
+      inputSerialization(fidelityResult);
+      return fidelityResult;
+   }
 }
