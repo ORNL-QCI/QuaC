@@ -37,8 +37,8 @@ public:
         loadHamiltonianJson(hamiltonianJson);
 
         BackendChannelConfigs channelConfigs;
-        const std::vector<double> d_loFreqs { 4.857, 4.97154 };
-        const std::vector<double> u_loFreqs { 4.972, 4.857 };
+        const std::vector<double> d_loFreqs { 4.85546, 4.97154 };
+        const std::vector<double> u_loFreqs { 4.97154, 4.85546 };
         channelConfigs.dt = 0.222;
         channelConfigs.loFregs_dChannels = d_loFreqs;
         channelConfigs.loFregs_uChannels = u_loFreqs;
@@ -52,7 +52,7 @@ public:
             auto cmddef_x_0 = provider->createComposite("pulse::x_0");
             cmddef_x_0->setBits({0});
             // These params are pre-calibrated (nl-opt)
-            const double ampl = 0.169244;
+            const double ampl = 0.165885;
             const double beta = 1.0;
             const int nSamples = 121;
             const int gamma = 20;
@@ -292,7 +292,66 @@ public:
         // We will replace them  which actual pulses later.
         // Rationale: This will save significant simulation time during development/testing.
         // ===============================================     
+        {
+            //  CR drive length = 848*dt
+            const int nSamples = 848;
+            const double A = 0.47307243770437246;
+            const std::string pulseName = "square" + std::to_string(A);
+            channelConfigs.addOrReplacePulse(pulseName, QuaC::GaussianSquare(nSamples, A, 32, 720));
+            auto cmddef_cnot_01 = provider->createComposite("pulse::cx_0_1");
 
+            auto cr_pulse = std::make_shared<xacc::quantum::Pulse>(pulseName, "u0");
+            cr_pulse->setBits({0, 1});
+            cr_pulse->setStart(0);
+            // Pre- and Post- U3 gates
+            // From calibration run:
+            // U3(-0.066247, -0.667994, -0.130193), 
+            // U3(-1.375548, 1.275995, -1.482965), 
+            // U3(0.157918, 0.443962, -0.863998), 
+            // U3(0.214932, -0.762514, 0.672792), 
+
+            const auto addDigitalU3 = [&cmddef_cnot_01](size_t qIdx, double in_theta, double in_phi, double in_lambda, int startTime) {
+                const auto digitalCmdDefName = "digital::u3_" + std::to_string(qIdx); 
+
+                auto digitalPulse1 = std::make_shared<xacc::quantum::Pulse>(digitalCmdDefName + "_theta");
+                auto digitalPulse2 = std::make_shared<xacc::quantum::Pulse>(digitalCmdDefName + "_phi");
+                auto digitalPulse3 = std::make_shared<xacc::quantum::Pulse>(digitalCmdDefName + "_lambda");
+
+                digitalPulse1->setBits({qIdx});
+                digitalPulse2->setBits({qIdx});
+                digitalPulse3->setBits({qIdx});
+                digitalPulse1->setStart(startTime);
+                digitalPulse2->setStart(startTime);
+                digitalPulse3->setStart(startTime);
+
+                xacc::InstructionParameter theta(in_theta);
+                digitalPulse1->setParameter(0, theta);
+
+                xacc::InstructionParameter phi(in_phi);
+                digitalPulse2->setParameter(0, phi);
+
+                xacc::InstructionParameter lambda(in_lambda);
+                digitalPulse3->setParameter(0, lambda);
+                cmddef_cnot_01->addInstruction(digitalPulse1);
+                cmddef_cnot_01->addInstruction(digitalPulse2);
+                cmddef_cnot_01->addInstruction(digitalPulse3);
+            };
+
+            // Pre-pulse U3 gates
+            // TODO: use actual pulses
+            addDigitalU3(0, -0.066247, -0.667994, -0.130193, 0);
+            addDigitalU3(1, -1.375548, 1.275995, -1.482965, 0);
+            
+            // CR pulse
+            cmddef_cnot_01->addInstruction(cr_pulse);
+            
+            // Post-pulse U3 gates
+            // TODO: use actual pulses
+            addDigitalU3(0, 0.157918, 0.443962, -0.863998, nSamples);
+            addDigitalU3(1, 0.214932, -0.762514, 0.672792, nSamples);
+            
+            xacc::contributeService(cmddef_cnot_01->name(), cmddef_cnot_01);
+        }
 
         setChannelConfigs(channelConfigs);
     }
