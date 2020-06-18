@@ -4,6 +4,7 @@
 #include "PulseSystemModel.hpp"
 #include "PulseGen.hpp"
 #include "CommonGates.hpp"
+#include "xacc_service.hpp"
 
 namespace {
     const std::string singleQubitHamiltonianJsonTemplate = R"#(

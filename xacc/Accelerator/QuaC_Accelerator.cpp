@@ -3,6 +3,8 @@
 #include "Pulse.hpp"
 #include "PulseSystemModel.hpp"
 #include "BackendRegistry.hpp"
+#include "xacc_service.hpp"
+
 namespace QuaC {
     void QuaC_Accelerator::initialize(const HeterogeneousMap& params)  
     {        
