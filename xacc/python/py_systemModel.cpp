@@ -51,6 +51,9 @@ PYBIND11_MODULE(_pyquaC, m)
     .def("DragPulse", [](int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta) {
         return QuaC::Drag(in_duration, in_amp, in_sigma, in_beta);
     })
+    .def("SlepianPulse", [](size_t in_nbSamples, double in_bW, int in_k) {
+        return QuaC::SlepianPulse(in_nbSamples, in_bW, in_k);
+    })
     .def("createPulse", [](const std::string& name, const std::string& channel) -> std::shared_ptr<xacc::Instruction> {
         return std::make_shared<xacc::quantum::Pulse>(name, channel);
     });

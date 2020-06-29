@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <complex>
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 
 namespace QuaC {
     std::vector<std::complex<double>> SquarePulse(size_t in_nbSamples, double in_amplitude = 1.0);
@@ -18,4 +20,7 @@ namespace QuaC {
 
     // DRAG pulse:
     std::vector<std::complex<double>> Drag(int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta);
+
+    // Slepian pulse:
+    Eigen::MatrixXcd SlepianPulse(size_t in_nbSamples, double in_bW, int in_k);
 }

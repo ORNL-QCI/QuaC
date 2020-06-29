@@ -49,7 +49,8 @@ target_include_directories(${LIBRARY_NAME} PUBLIC   .
                                                     ./Backend
                                                     ${QUAC_INCLUDE_DIRS}
                                                     ${XACC_QUAC_BASE_INCLUDE_DIR}
-                                                    ${XACC_ROOT}/include)
+                                                    ${XACC_ROOT}/include
+                                                    ${XACC_ROOT}/include/eigen)
 
 
 target_link_libraries(${LIBRARY_NAME} PUBLIC xacc::xacc xacc::quantum_gate FunctorExecutor)

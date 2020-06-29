@@ -108,4 +108,16 @@ namespace QuaC {
         return gaussian;
     }
 
+    Eigen::MatrixXcd SlepianPulse(size_t in_nbSamples, double in_bW, int in_k)
+    {
+        Eigen::EigenSolver<Eigen::MatrixXd> es;
+        Eigen::MatrixXd tridiag = Eigen::MatrixXd::Zero(in_nbSamples, in_nbSamples);
+        for (size_t i = 0; i < (in_nbSamples - 1); i++){
+            tridiag(i, i - 1) = 0.5 * i * (in_nbSamples - i);
+            tridiag(i, i) = ((in_nbSamples - 1) / 2) * ((in_nbSamples - 1) / 2) * cos(2 * M_PI * in_bW);
+            tridiag(i, i + 1) = 0.5 * (i + 1) * (in_nbSamples - 1 - i);
+        }
+        es.compute(tridiag);
+        return es.eigenvectors();
+    }
 }
