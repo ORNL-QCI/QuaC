@@ -1,0 +1,1 @@
+This is a repo for developing time and bandlimited pulse controls for quantum devices. Through the use of Trust Region Policy Optimization, a method of Deep Reinforcement Learning, we can optimize the fidelity of quantum logic gates through the construction of pulses in terms of Discrete Prolate Spheroidal Sequences.
