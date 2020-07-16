@@ -5,7 +5,7 @@ find_package(XACC REQUIRED)
 add_library(FunctorExecutor STATIC Executor/Functor.cpp Executor/Executor.cpp)
 target_compile_options(FunctorExecutor PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 target_include_directories(FunctorExecutor PUBLIC  ./Utils ./Executor ${QUAC_INCLUDE_DIRS} ${XACC_QUAC_BASE_INCLUDE_DIR} ./tpls/cereal/include)
-target_link_libraries(FunctorExecutor PUBLIC QuaC base)
+target_link_libraries(FunctorExecutor PUBLIC QuaC base lapack)
 target_compile_options(FunctorExecutor PRIVATE -fPIC)
 target_compile_definitions(FunctorExecutor PRIVATE NODE_SERVICE_EXE_DIR=${CMAKE_CURRENT_BINARY_DIR})
 
@@ -47,6 +47,7 @@ target_include_directories(${LIBRARY_NAME} PUBLIC   .
                                                     ./Utils
                                                     ./Executor
                                                     ./Backend
+                                                    ./armadillo
                                                     ${QUAC_INCLUDE_DIRS}
                                                     ${XACC_QUAC_BASE_INCLUDE_DIR}
                                                     ${XACC_ROOT}/include
