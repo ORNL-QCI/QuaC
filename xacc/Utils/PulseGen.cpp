@@ -2,6 +2,7 @@
 #include <math.h> 
 #include "exprtk/exprtk.hpp"
 #include <cassert>
+#include <iostream>
 
 using symbol_table_t = exprtk::symbol_table<double>;
 using expression_t = exprtk::expression<double>;
@@ -108,4 +109,103 @@ namespace QuaC {
         return gaussian;
     }
 
+    
+    // Pseudocode:
+    // 1. Create the tridiagonal matrix of size (nbSamples, nbSamples)
+    // 2. Solve for the eigenvectors of the tridiagonal system and flip
+    //    to be ordered from greatest eigenvalue to least
+    // 3. Even orders (k=0,2,4,...) need to have a positive average and
+    //    odd orders (k=1,2,3,...) need to start with a positive lobe. 
+    // 4. Multiply alpha_vector (size: (in_K, 1)) by the post-processed
+    //    eigenVectors matrix (size: (in_nbSamples, in_K)) and sum along rows 
+    //    to get final pulse vector   
+    std::vector<double> SlepianPulse(std::vector<double> alpha_vector, size_t in_nbSamples, double in_bW, int in_K) 
+    {
+        // This implementation follows the Discrete Prolate Spheroidal Sequences 
+        // algorithm as outlined in: Percival DB, Walden WT. Spectral Analysis for 
+        // Physical Applications: Multitaper and Conventional Univariate Techniques.
+        // Cambridge University Press; 1993.
+
+        if (in_nbSamples % 2 != 0)
+        {
+            std::cout << " Requested odd number of samples : " << in_nbSamples << std::endl;
+            std::cout << " Using " << in_nbSamples + 1 << " samples instead " << std::endl;
+            size_t in_nbSamples = in_nbSamples + 1;
+        }
+        
+        // Step 1
+        arma::vec alphas(alpha_vector);
+        arma::SpMat<double> tridiag = arma::zeros<arma::SpMat<double>>(in_nbSamples, in_nbSamples);
+        for (size_t i = 0; i < in_nbSamples; i++) 
+        {
+            for (size_t j = 0; j < in_nbSamples; j++) 
+            {
+            if (j == i - 1) 
+            {
+                tridiag(i, j) = 0.5 * i * (in_nbSamples - i);
+            }
+            if (j == i) 
+            {
+                tridiag(i, j) = ((0.5 * (in_nbSamples - 1)) - i) *
+                                ((0.5 * (in_nbSamples - 1)) - i) *
+                                cos(2 * M_PI * in_bW);
+            }
+            if (j == i + 1) 
+            {
+                tridiag(i, j) = 0.5 * (i + 1) * (in_nbSamples - 1 - i);
+            }
+            }
+        }
+
+        // Step 2
+        arma::vec eigenValues;
+        arma::mat eigenVectors_raw;
+        arma::eigs_sym(eigenValues, eigenVectors_raw, tridiag, in_K);
+        arma::mat eigenVectors = arma::reverse(eigenVectors_raw);
+
+        // Step 3
+        auto thresh = std::max(1e-7, 1. / in_nbSamples);
+        for (size_t i = 0; i < eigenVectors.n_cols; i++)
+        {
+            // If it's an even order (k=0,2,4,..), check if it has a positive average.
+            // If not, multiply by -1. Per
+            if (i % 2 == 0)
+            {
+                double sum = arma::accu(eigenVectors.col(i));
+                if (sum < 0.)
+                {
+                    for (size_t j = 0; j < eigenVectors.n_rows; ++j)
+                    {
+                    eigenVectors(j, i) =  eigenVectors(j, i) * -1.;
+                    }
+                }
+            } else {
+                // For anti-symmetric orders (k=1,3,5,...) need to begin with a positive lobe
+                arma::vec column = eigenVectors.col(i);
+                arma::mat ww = column % column;
+                arma::vec find_thresh = column.elem( arma::find(ww > thresh) ) ;
+                double first_idx = find_thresh.at(0);
+                if (first_idx < 0.)
+                {
+                    for (size_t j = 0; j < eigenVectors.n_rows; ++j)
+                    {
+                    eigenVectors(j, i) =  eigenVectors(j, i) * -1.;
+                    }
+                }
+            }
+        }
+        
+        // Step 4
+        for (size_t i = 0; i < eigenVectors.n_cols; ++i)
+        {
+          for (size_t j = 0; j < eigenVectors.n_rows; ++j)
+          {
+            double weight = alphas(i);
+            eigenVectors(j, i) = weight * eigenVectors(j, i); 
+          }
+        } 
+
+        arma::colvec result = arma::sum(eigenVectors, 1);
+        return arma::conv_to< std::vector<double> >::from(result);
+    }
 }
