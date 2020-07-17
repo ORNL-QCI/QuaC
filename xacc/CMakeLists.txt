@@ -47,7 +47,7 @@ target_include_directories(${LIBRARY_NAME} PUBLIC   .
                                                     ./Utils
                                                     ./Executor
                                                     ./Backend
-                                                    ./armadillo
+                                                    ${XACC_ROOT}/include/armadillo
                                                     ${QUAC_INCLUDE_DIRS}
                                                     ${XACC_QUAC_BASE_INCLUDE_DIR}
                                                     ${XACC_ROOT}/include
