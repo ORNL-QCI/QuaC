@@ -17,6 +17,15 @@ namespace QuaC {
             {
                 xacc::error("Invalid backend named '" + backendName + "' was requested.");
             }
+
+            if (params.keyExists<std::vector<double>>("initial-population"))
+            {
+                const std::vector<double> initialPops = params.get<std::vector<double>>("initial-population");
+                for (size_t i = 0; i < initialPops.size(); ++i)
+                {
+                    m_systemModel->setQubitInitialPopulation(i, initialPops[i]);
+                }
+            }
         }
         else
         {
