@@ -208,4 +208,23 @@ namespace QuaC {
         arma::colvec result = arma::sum(eigenVectors, 1);
         return arma::conv_to< std::vector<double> >::from(result);
     }
+
+    // Creating pulse as a weighted expansion in the Hanning basis. 
+    // Analytical Form:
+    // Omega = \sum{k=1}^{K} \alpha_{k} * (1 - cos(2 * \pi * k * t) / T)
+    std::vector<double> HanningPulse(std::vector<double> alpha_vector, size_t in_nbSamples, size_t in_K, size_t in_T)
+    {    
+        arma::vec order;
+        arma::vec result(in_T, arma::fill::zeros);
+        for (size_t k = 0; k < in_K; k++) 
+        {
+            order.zeros(in_T) ;
+            for (size_t t = 0; t < in_T; t++) 
+            {
+                order(t) = alpha_vector.at(k) * (1 - cos((2 * M_PI * k * t) / in_T)) ; 
+            }
+            result = result + order ;
+        }
+        return arma::conv_to< std::vector<double> >::from(result);
+    }
 }

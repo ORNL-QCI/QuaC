@@ -54,6 +54,9 @@ PYBIND11_MODULE(_pyquaC, m)
     .def("SlepianPulse", [](std::vector<double> alpha_vector, size_t in_nbSamples, double in_bW, int in_K) {
         return QuaC::SlepianPulse(alpha_vector, in_nbSamples, in_bW, in_K);
     })
+	.def("HanningPulse", [](std::vector<double> alpha_vector, size_t in_nbSamples, size_t in_K, size_t in_T) {
+        return QuaC::HanningPulse(alpha_vector, in_nbSamples, in_K, in_T);
+    })
     .def("createPulse", [](const std::string& name, const std::string& channel) -> std::shared_ptr<xacc::Instruction> {
         return std::make_shared<xacc::quantum::Pulse>(name, channel);
     });

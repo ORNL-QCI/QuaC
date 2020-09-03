@@ -23,4 +23,7 @@ namespace QuaC {
 
     // Slepian pulse:
     std::vector<double> SlepianPulse(std::vector<double> alpha_vector, size_t in_nbSamples, double in_bW, int in_K);
+
+    // Hanning pulse:
+    std::vector<double> HanningPulse(std::vector<double> alpha_vector, size_t in_nbSamples, size_t in_K, size_t in_T);
 }
