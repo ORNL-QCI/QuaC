@@ -36,3 +36,6 @@ target_link_libraries(IrTransformTester xacc xacc_quac xacc::quantum_gate)
 
 # add_xacc_test(DefaultBackend)
 # target_link_libraries(DefaultBackendTester xacc xacc_quac xacc::quantum_gate)
+
+add_xacc_test(IBMEmulator)
+target_link_libraries(IBMEmulatorTester xacc xacc_quac xacc::quantum_gate)

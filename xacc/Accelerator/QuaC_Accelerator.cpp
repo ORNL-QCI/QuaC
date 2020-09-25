@@ -11,19 +11,39 @@ namespace QuaC {
         if (params.stringExists("backend"))
         {
             const auto backendName = params.getString("backend");
-            auto backendRegistry = xacc::getService<BackendRegistry>("default");
-            m_systemModel = backendRegistry->getSystemModel(backendName);
-            if (!m_systemModel)
-            {
-                xacc::error("Invalid backend named '" + backendName + "' was requested.");
-            }
+            std::cout << "Backend name: " << backendName << "\n";
+            // If the name starts with "ibmq", e.g., "ibmq_armonk",
+            // delagate to the IBM remote accelerator to initialize pulse library.
+            if (backendName.size() > 4 && backendName.substr(0, 4) == "ibmq") {
+                auto ibmAcc = xacc::getAccelerator("ibm:" + backendName);
+                ibmAcc->contributeInstructions();
 
-            if (params.keyExists<std::vector<double>>("initial-population"))
-            {
-                const std::vector<double> initialPops = params.get<std::vector<double>>("initial-population");
-                for (size_t i = 0; i < initialPops.size(); ++i)
+                m_systemModel = std::make_shared<PulseSystemModel>();
+                const auto backendProps = ibmAcc->getProperties().get<std::string>("total-json");
+                std::cout << "Backend JSON:\n" << backendProps << "\n";
+                if (!m_systemModel->fromQobjectJson(backendProps))
                 {
-                    m_systemModel->setQubitInitialPopulation(i, initialPops[i]);
+                    xacc::error("Failed to initialize pulse system model from the JSON file.");
+                    return;
+                }
+            }
+            else 
+            {
+                // Not an IBM backend: try to look up from our sample backend models.
+                auto backendRegistry = xacc::getService<BackendRegistry>("default");
+                m_systemModel = backendRegistry->getSystemModel(backendName);
+                if (!m_systemModel)
+                {
+                    xacc::error("Invalid backend named '" + backendName + "' was requested.");
+                }
+
+                if (params.keyExists<std::vector<double>>("initial-population"))
+                {
+                    const std::vector<double> initialPops = params.get<std::vector<double>>("initial-population");
+                    for (size_t i = 0; i < initialPops.size(); ++i)
+                    {
+                        m_systemModel->setQubitInitialPopulation(i, initialPops[i]);
+                    }
                 }
             }
         }
