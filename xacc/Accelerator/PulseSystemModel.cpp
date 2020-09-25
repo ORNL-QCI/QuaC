@@ -45,28 +45,36 @@ size_t HamiltonianModel::getQubitDimension(size_t in_qubitIdx) const
 bool PulseSystemModel::fromQobjectJson(const std::string& in_jsonString)
 {
     auto j = nlohmann::json::parse(in_jsonString);
-    // Note: we will only process one backend per json file
-    auto backend = *(j["backends"].begin());
+    const bool isTopLevelConfig = (j.find("hamiltonian") !=  j.end());
     
-    // Get name:
-    auto name = backend["name"].get<std::string>();
-    if (!name.empty())
-    {
-        m_name = name;
-    }
+    auto configJson = isTopLevelConfig ? j : [&](){
+        // Note: we will only process one backend per json file
+        auto backend = *(j["backends"].begin());
+    
+        // Get name:
+        auto name = backend["name"].get<std::string>();
+        if (!name.empty())
+        {
+            m_name = name;
+        }
+
+        // Load Hamiltonain model from Json
+        auto config = backend["specificConfiguration"];
+        return config;
+    }();
 
     // Load Hamiltonain model from Json
-    auto hamiltonian = backend["specificConfiguration"]["hamiltonian"];
+    auto hamiltonian = configJson["hamiltonian"];
     if (!loadHamiltonianJson(hamiltonian.dump()))
     {
         return false;
     }
     
-    const double dt =  backend["specificConfiguration"]["dt"].get<double>();
+    const double dt =  configJson["dt"].get<double>();
     m_channelConfigs.dt = dt;
     m_channelConfigs.loFregs_dChannels.clear();
 
-    auto loRanges = backend["specificConfiguration"]["qubit_lo_range"];
+    auto loRanges = configJson["qubit_lo_range"];
     for (auto d_iter = loRanges.begin(); d_iter != loRanges.end(); ++d_iter) 
     {
         const double DEFAULT_FREQ = 5.0;
@@ -74,7 +82,7 @@ bool PulseSystemModel::fromQobjectJson(const std::string& in_jsonString)
         m_channelConfigs.loFregs_dChannels.emplace_back(DEFAULT_FREQ);
     }
 
-    auto uRanges = backend["specificConfiguration"]["u_channel_lo"];
+    auto uRanges = configJson["u_channel_lo"];
     for (auto u_iter = uRanges.begin(); u_iter != uRanges.end(); ++u_iter) 
     {
         // Adding none freq. but assign the formula appropriately.
@@ -93,7 +101,7 @@ bool PulseSystemModel::fromQobjectJson(const std::string& in_jsonString)
     }
 
     // Get the pulse library
-    auto pulse_library = backend["specificConfiguration"]["defaults"]["pulse_library"];
+    auto pulse_library = configJson["defaults"]["pulse_library"];
     
     for (auto pulse_iter = pulse_library.begin(); pulse_iter != pulse_library.end(); ++pulse_iter) 
     {
@@ -107,27 +115,30 @@ bool PulseSystemModel::fromQobjectJson(const std::string& in_jsonString)
     }
 
     // Import cmd-defs
-    auto cmd_defs = backend["specificConfiguration"]["defaults"]["cmd_def"];
-    for (auto cmd_def_iter = cmd_defs.begin(); cmd_def_iter != cmd_defs.end(); ++cmd_def_iter) 
+    if (configJson.find("defaults") !=  configJson.end()) 
     {
-        const auto cmd_def_name = (*cmd_def_iter)["name"].get<std::string>();
-        const auto qbits = (*cmd_def_iter)["qubits"].get<std::vector<std::size_t>>();
-        std::string tmpName = "pulse::" + cmd_def_name;
-        if (cmd_def_name != "measure")
+        auto cmd_defs = configJson["defaults"]["cmd_def"];
+        for (auto cmd_def_iter = cmd_defs.begin(); cmd_def_iter != cmd_defs.end(); ++cmd_def_iter) 
         {
-            for (const auto& qb : qbits)
+            const auto cmd_def_name = (*cmd_def_iter)["name"].get<std::string>();
+            const auto qbits = (*cmd_def_iter)["qubits"].get<std::vector<std::size_t>>();
+            std::string tmpName = "pulse::" + cmd_def_name;
+            if (cmd_def_name != "measure")
             {
-                tmpName += "_" + std::to_string(qb);
+                for (const auto& qb : qbits)
+                {
+                    tmpName += "_" + std::to_string(qb);
+                }
             }
-        }
 
-        // Get the composite instruction for the command
-        if (xacc::hasContributedService<xacc::Instruction>(tmpName))
-        {
-            auto cmd_def = xacc::ir::asComposite(xacc::getContributedService<xacc::Instruction>(tmpName));      
-            if (!addCommandDef(tmpName, cmd_def))
+            // Get the composite instruction for the command
+            if (xacc::hasContributedService<xacc::Instruction>(tmpName))
             {
-                return false;
+                auto cmd_def = xacc::ir::asComposite(xacc::getContributedService<xacc::Instruction>(tmpName));      
+                if (!addCommandDef(tmpName, cmd_def))
+                {
+                    return false;
+                }
             }
         }
     }

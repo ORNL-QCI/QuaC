@@ -17,9 +17,8 @@ namespace QuaC {
             if (backendName.size() > 4 && backendName.substr(0, 4) == "ibmq") {
                 auto ibmAcc = xacc::getAccelerator("ibm:" + backendName);
                 ibmAcc->contributeInstructions();
-
                 m_systemModel = std::make_shared<PulseSystemModel>();
-                const auto backendProps = ibmAcc->getProperties().get<std::string>("total-json");
+                const auto backendProps = ibmAcc->getProperties().get<std::string>("config-json");
                 std::cout << "Backend JSON:\n" << backendProps << "\n";
                 if (!m_systemModel->fromQobjectJson(backendProps))
                 {
