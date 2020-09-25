@@ -19,7 +19,7 @@ namespace QuaC {
     {
     public:
         void initialize(std::shared_ptr<AcceleratorBuffer> buffer, PulseSystemModel* in_systemModel, const HeterogeneousMap& in_params = {});
-        void solve();
+        void solve(bool in_shouldSchedule = true);
         void finalize();
         virtual std::shared_ptr<PulseVisitor> clone() override { return std::make_shared<PulseVisitor>(); }
         virtual int GetChannelId(const std::string& in_channelName) override;

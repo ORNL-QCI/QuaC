@@ -369,11 +369,14 @@ namespace QuaC {
       // std::cout << "After Scheduled : \n" << in_pulseInstruction->toString() << "\n";
    }
 
-   void PulseVisitor::solve() 
+   void PulseVisitor::solve(bool in_shouldSchedule) 
    {
       // Step 1: schedule the pulse program
-      schedulePulses(m_pulseComposite);      
-      
+      if (in_shouldSchedule)
+      {
+         schedulePulses(m_pulseComposite);
+      }
+
       m_measureQubits.clear();
       m_buffer->clearMeasurements();
       
@@ -486,9 +489,19 @@ namespace QuaC {
                      pulse->start()*m_pulseChannelController->GetBackendConfigs().dt
                   ));
             } 
+            else if(pulseName == "parametric_pulse")
+            {
+               std::cout << "TODO: parametric_pulse \n";
+               auto pulseParameters = pulse->getPulseParams();
+               const auto pulseShape = pulseParameters.getString("pulse_shape");
+               const auto pulseParamsJson = pulseParameters.getString("parameters_json");
+               std::cout << "Pulse: " << pulseShape << "\n";
+               std::cout << "Params: \n" << pulseParamsJson << "\n";
+               // TODO: implement a service to construct pulse samples for this parametric pulse.
+            }
             else
             {
-               // This is a pulse instruction (pulse name + sample)
+               // This is a *sample* pulse instruction (pulse name + sample)
                // Note: we are solving the system dynamics via the Master Equation (via a solver not Monte Carlo),
                // hence, currently, we can only support measurements at the end of the circuit.
                if (!m_measureQubits.empty())

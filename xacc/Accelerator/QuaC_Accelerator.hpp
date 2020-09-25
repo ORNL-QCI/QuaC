@@ -35,5 +35,6 @@ namespace QuaC {
         HeterogeneousMap m_params;
         std::shared_ptr<PulseSystemModel> m_systemModel; 
         std::shared_ptr<PulseVisitor> m_pulseVisitor;
+        bool m_ibmEmulatorMode;
     };
 }

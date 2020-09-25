@@ -8,6 +8,7 @@
 namespace QuaC {
     void QuaC_Accelerator::initialize(const HeterogeneousMap& params)  
     {        
+        m_ibmEmulatorMode = false;
         if (params.stringExists("backend"))
         {
             const auto backendName = params.getString("backend");
@@ -25,6 +26,8 @@ namespace QuaC {
                     xacc::error("Failed to initialize pulse system model from the JSON file.");
                     return;
                 }
+                // Successfully load IBM config.
+                m_ibmEmulatorMode = true;
             }
             else 
             {
@@ -99,7 +102,18 @@ namespace QuaC {
         }
         
         m_pulseVisitor->initialize(buffer, m_systemModel.get(), m_params);
+
+        // If this is an IBM-emulator run, we delegate to IBM Accelerator
+        // for pulse problem assembling.
+        // This will make sure that the pulse program here is the same as the one that we submit to the real remote backend.
+        if (m_ibmEmulatorMode)
+        {
+            auto ibmPulseAssembler = xacc::getService<IRTransformation>("ibm-pulse");
+            ibmPulseAssembler->apply(compositeInstruction, nullptr);
+        }
+
         // Walk the IR tree, and visit each node
+        // Note: in IBM emulator mode, the compositeInstruction is already lowered to pulses.
         InstructionIterator it(compositeInstruction);
         while (it.hasNext()) 
         {
@@ -108,9 +122,11 @@ namespace QuaC {
             {
                 nextInst->accept(m_pulseVisitor);
             }
-        }            
-        m_pulseVisitor->solve();
-        
+        }
+        const bool needSchedulePulse = !m_ibmEmulatorMode;
+        // No need to schedule since the IBM pulse composite has already been assembled.
+        m_pulseVisitor->solve(needSchedulePulse);
+
         // If there is a target density matrix, 
         // calculate the fidelity b/w the result Dm and target dm.
         if (buffer->hasExtraInfoKey("target-dm-real") && buffer->hasExtraInfoKey("target-dm-imag"))
