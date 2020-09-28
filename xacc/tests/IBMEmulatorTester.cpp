@@ -6,7 +6,7 @@
 TEST(IBMEmulatorTester, checkSimple) 
 {
     xacc::set_verbose(true);
-    auto qpu = xacc::getAccelerator("QuaC:ibmq_armonk"); 
+    auto qpu = xacc::getAccelerator("QuaC:ibmq_armonk", {{ "shots", 1024 }}); 
     auto buffer = xacc::qalloc(1);
     auto provider = xacc::getService<xacc::IRProvider>("quantum");
     auto f = provider->createComposite("tmp");

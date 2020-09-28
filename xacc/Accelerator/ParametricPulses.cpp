@@ -5,7 +5,7 @@
 #include "Pulse.hpp"
 
 namespace QuaC {
-std::shared_ptr<xacc::quantum::Pulse> ParametricPulses::generatePulse(const std::string &in_shape, double dt, const std::string &in_paramsJson) 
+std::shared_ptr<xacc::quantum::Pulse> ParametricPulses::generatePulse(const std::string &in_shape, const std::string &in_paramsJson) 
 {
     static const std::vector<std::string> SUPPORTED_PULSE_SHAPES { "gaussian", "gaussian_square", "drag", "constant" };
     if (!xacc::container::contains(SUPPORTED_PULSE_SHAPES, in_shape)) 

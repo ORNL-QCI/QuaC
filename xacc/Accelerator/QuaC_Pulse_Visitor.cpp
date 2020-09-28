@@ -7,6 +7,7 @@
 #include "Scheduler.hpp"
 #include "PulseSystemModel.hpp"
 #include "Functor.hpp"
+#include "ParametricPulses.hpp"
 
 enum class ExecutorType { SingleProcess, CommSpawn };
 constexpr int NUMBER_OF_MPI_PROCESSES = 4;
@@ -412,9 +413,15 @@ namespace QuaC {
                   xacc::error("Gate operations are not allowed after measurements!\n");
                }
             }
-            else if (pulseName == "acquire")
+            else if (pulseName == "acquire" || (!channelName.empty() && channelName[0] == 'm'))
             {
-               m_measureQubits.emplace(pulse->bits()[0]);
+               if (!channelName.empty() && channelName[0] == 'm')
+               {
+                  const std::string bitExpr = channelName.substr(1);
+                  assert(!bitExpr.empty());
+                  const int measuredBit = std::stoi(bitExpr);
+                  m_measureQubits.emplace(measuredBit);
+               }
             }
             else if (pulseName.rfind("digital::u3_", 0) == 0) 
             {
@@ -491,13 +498,22 @@ namespace QuaC {
             } 
             else if(pulseName == "parametric_pulse")
             {
-               std::cout << "TODO: parametric_pulse \n";
+               auto parametricPulseConverter = xacc::getService<QuaC::ParametricPulses>("default");
                auto pulseParameters = pulse->getPulseParams();
                const auto pulseShape = pulseParameters.getString("pulse_shape");
                const auto pulseParamsJson = pulseParameters.getString("parameters_json");
-               std::cout << "Pulse: " << pulseShape << "\n";
-               std::cout << "Params: \n" << pulseParamsJson << "\n";
-               // TODO: implement a service to construct pulse samples for this parametric pulse.
+               // std::cout << "Pulse: " << pulseShape << "\n";
+               // std::cout << "Params: \n" << pulseParamsJson << "\n";
+               auto pulseInst = parametricPulseConverter->generatePulse(pulseShape, pulseParamsJson);
+               pulseInst->setStart(pulse->start());
+               pulseInst->setChannel(pulse->channel());
+               m_pulseChannelController->GetBackendConfigs().addOrReplacePulse(pulseInst->name(), PulseSamplesToComplexVec(pulseInst->getSamples()));
+               double endTime = 0.0;
+               UpdatePulseScheduleMap(allPulseSchedules, *pulseInst, *m_pulseChannelController, endTime);
+               if (endTime > simStopTime)
+               {
+                  simStopTime = endTime;
+               }
             }
             else
             {

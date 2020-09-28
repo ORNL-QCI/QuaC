@@ -20,12 +20,19 @@ namespace QuaC {
                 ibmAcc->contributeInstructions();
                 m_systemModel = std::make_shared<PulseSystemModel>();
                 const auto backendProps = ibmAcc->getProperties().get<std::string>("config-json");
-                std::cout << "Backend JSON:\n" << backendProps << "\n";
+                
                 if (!m_systemModel->fromQobjectJson(backendProps))
                 {
                     xacc::error("Failed to initialize pulse system model from the JSON file.");
                     return;
                 }
+
+                // Set D channels' LO freqs. based on backend defaults.
+                const auto backendDefaults = ibmAcc->getProperties().get<std::string>("defaults-json");
+                auto j = nlohmann::json::parse(backendDefaults);
+                const auto defaultLoFreqs = j["qubit_freq_est"].get<std::vector<double>>();
+                m_systemModel->getChannelConfigs().loFregs_dChannels = defaultLoFreqs;
+                
                 // Successfully load IBM config.
                 m_ibmEmulatorMode = true;
             }
