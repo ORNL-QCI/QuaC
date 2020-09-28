@@ -9,7 +9,7 @@ using expression_t = exprtk::expression<double>;
 using parser_t = exprtk::parser<double>;
 
 namespace QuaC {
-    std::vector<std::complex<double>> SquarePulse(size_t in_nbSamples, double in_amplitude)
+    std::vector<std::complex<double>> SquarePulse(size_t in_nbSamples, const std::complex<double>& in_amplitude)
     {
         const std::vector<std::complex<double>> result(in_nbSamples, in_amplitude);
         return result;

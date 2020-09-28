@@ -21,12 +21,23 @@ std::shared_ptr<xacc::quantum::Pulse> ParametricPulses::generatePulse(const std:
         {
             samples.emplace_back(std::vector<double>{ dataPoint.real(), dataPoint.imag()});
         }
+        return samples;
     };
 
     if (in_shape == "gaussian") 
     {
-        // TODO: get schema from IBM
-        return nullptr;
+        static int pulseIdCounter = 0;
+        auto pulseInst = std::make_shared<xacc::quantum::Pulse>("gaussian_" + std::to_string(pulseIdCounter++));
+        auto j = nlohmann::json::parse(in_paramsJson);   
+        auto ampAsVec = j["amp"].get<std::vector<double>>();
+        assert(ampAsVec.size() == 2);
+        auto duration = j["duration"].get<int>();
+        auto sigma = j["sigma"].get<int>();
+        const std::complex<double> amp { ampAsVec[0], ampAsVec[1]};
+        // Beta = 0.0 (no derivative part)
+        const auto pulseSamples = QuaC::Drag(duration, amp, sigma, 0.0);
+        pulseInst->setSamples(formatPulseSampleVec(pulseSamples));
+        return pulseInst;
     }
     
     if (in_shape == "gaussian_square") 
@@ -64,8 +75,16 @@ std::shared_ptr<xacc::quantum::Pulse> ParametricPulses::generatePulse(const std:
 
     if (in_shape == "constant") 
     {
-        // TODO: get schema from IBM
-        return nullptr;
+        static int pulseIdCounter = 0;
+        auto pulseInst = std::make_shared<xacc::quantum::Pulse>("constant_" + std::to_string(pulseIdCounter++));
+        auto j = nlohmann::json::parse(in_paramsJson);   
+        auto ampAsVec = j["amp"].get<std::vector<double>>();
+        assert(ampAsVec.size() == 2);
+        auto duration = j["duration"].get<int>();
+        const std::complex<double> amp { ampAsVec[0], ampAsVec[1]};
+        const auto pulseSamples = QuaC::SquarePulse(duration, amp);
+        pulseInst->setSamples(formatPulseSampleVec(pulseSamples));
+        return pulseInst;
     }
 
     return nullptr;
