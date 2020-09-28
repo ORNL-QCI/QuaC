@@ -7,6 +7,7 @@
 #include "QuaC_TearDown.hpp"
 #include "PulseSystemModel.hpp"
 #include "BackendRegistry.hpp"
+#include "ParametricPulses.hpp"
 
 using namespace cppmicroservices;
 
@@ -22,6 +23,7 @@ public:
     context.RegisterService<xacc::TearDown>(std::make_shared<QuacTearDown>());
     context.RegisterService<QuaC::PulseSystemModel>(std::make_shared<QuaC::PulseSystemModel>("global"));
     context.RegisterService<QuaC::BackendRegistry>(std::make_shared<QuaC::BackendRegistry>());
+    context.RegisterService<QuaC::ParametricPulses>(std::make_shared<QuaC::ParametricPulses>());
   }
 
   void Stop(BundleContext context) {}
