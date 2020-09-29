@@ -2,10 +2,13 @@
 
 #include <vector>
 #include <complex>
-#include<armadillo>
+#include <optional>
+#include <armadillo>
 
 
 namespace QuaC {
+    enum class SamplerType { Left, Right, Midpoint };
+    
     std::vector<std::complex<double>> SquarePulse(size_t in_nbSamples, const std::complex<double>& in_amplitude = 1.0);
     std::vector<std::complex<double>> GaussianPulse(size_t in_nbSamples, double in_sigma, double in_dt = 1.0, double in_amplitude = 1.0);
     std::vector<std::complex<double>> PulseFunc(const std::string& in_functionString, size_t in_nbSamples, double in_dt = 1.0);
@@ -19,7 +22,7 @@ namespace QuaC {
     std::vector<std::complex<double>> GaussianSquare(int in_duration, std::complex<double> in_amp, int in_sigma, int in_width);
 
     // DRAG pulse:
-    std::vector<std::complex<double>> Drag(int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta);
+    std::vector<std::complex<double>> Drag(int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta, bool in_zeroEnded = true, SamplerType in_sampler = SamplerType::Left);
 
     // Slepian pulse:
     std::vector<double> SlepianPulse(std::vector<double> alpha_vector, size_t in_nbSamples, double in_bW, int in_K);

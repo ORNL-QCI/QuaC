@@ -8,6 +8,53 @@ using symbol_table_t = exprtk::symbol_table<double>;
 using expression_t = exprtk::expression<double>;
 using parser_t = exprtk::parser<double>;
 
+namespace {
+    
+    std::vector<std::complex<double>> gaussian(int in_duration, std::complex<double> in_amp, int in_center, double in_sigma)
+    {
+        std::vector<std::complex<double>> gaussian;
+        gaussian.reserve(in_duration);
+        for (int i = 0; i < in_duration; ++i)
+        {
+            gaussian.emplace_back(in_amp*std::exp(-std::pow(1.0*i - in_center, 2) / 2.0 / std::pow(in_sigma, 2.0)));
+        }
+        return gaussian;
+    }
+    
+    std::vector<std::complex<double>> fixGaussianWidth(const std::vector<std::complex<double>>& in_gauss, const std::complex<double>& in_amp, int in_center, double in_sigma, std::optional<int> in_zeroWidth, bool in_rescaleAmp)
+    {
+        const int zeroedWidth = in_zeroWidth.value_or(2 * (in_center + 1));
+        const auto zeroOffset = gaussian(zeroedWidth/2, in_amp, 0, in_sigma);
+        auto gaussianSamples = in_gauss;
+        for (size_t i = 0; i < gaussianSamples.size(); ++i)
+        {
+            gaussianSamples[i] -= zeroOffset[i];
+        }
+       
+        std::vector<double> ampScaleFactor(gaussianSamples.size(), 1.0);
+        if (in_rescaleAmp)
+        {
+            for (size_t i = 0; i < gaussianSamples.size(); ++i)
+            {
+                if (std::abs(in_amp - zeroOffset[i]) != 0.0) 
+                {
+                    ampScaleFactor[i] = std::abs(in_amp/(in_amp - zeroOffset[i]));
+                }
+                else
+                {
+                   ampScaleFactor[i] = 1.0;
+                }
+            }
+            for (size_t i = 0; i < gaussianSamples.size(); ++i)
+            {
+                gaussianSamples[i] *= ampScaleFactor[i];
+
+            }
+        }
+        return gaussianSamples;
+    }
+}
+
 namespace QuaC {
     std::vector<std::complex<double>> SquarePulse(size_t in_nbSamples, const std::complex<double>& in_amplitude)
     {
@@ -88,8 +135,9 @@ namespace QuaC {
         return result;
     }
 
-    std::vector<std::complex<double>> Drag(int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta)
+    std::vector<std::complex<double>> Drag(int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta, bool in_zeroEnded, SamplerType in_sampler)
     {
+        // TODO: implement different sampling mechanisms (left, right, midpoint)
         std::vector<std::complex<double>> gaussian;
         gaussian.reserve(in_duration);
         const int mu = in_duration/2;
@@ -98,6 +146,11 @@ namespace QuaC {
             gaussian.emplace_back(in_amp*std::exp(-std::pow(1.0*i - mu, 2) / 2.0 / std::pow(in_sigma, 2.0)));
         }
 
+        const std::optional<int> zeroedWidth = in_zeroEnded ? (in_duration + 2) : std::optional<int>();
+        const bool rescaleAmp = in_zeroEnded;
+        // Fix Gaussian width
+        gaussian =  fixGaussianWidth(gaussian, in_amp, mu, in_sigma, zeroedWidth, rescaleAmp);
+        
         for (int i = 0; i < in_duration; ++i)
         {
             const auto x = gaussian[i];
