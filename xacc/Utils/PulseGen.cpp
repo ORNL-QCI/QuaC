@@ -9,22 +9,37 @@ using expression_t = exprtk::expression<double>;
 using parser_t = exprtk::parser<double>;
 
 namespace {
-    
-    std::vector<std::complex<double>> gaussian(int in_duration, std::complex<double> in_amp, int in_center, double in_sigma)
+    template<typename T>
+    std::vector<T> arange(T start, T stop, T step = 1) 
     {
-        std::vector<std::complex<double>> gaussian;
-        gaussian.reserve(in_duration);
-        for (int i = 0; i < in_duration; ++i)
+        std::vector<T> values;
+        for (T value = start; value < stop; value += step)
         {
-            gaussian.emplace_back(in_amp*std::exp(-std::pow(1.0*i - in_center, 2) / 2.0 / std::pow(in_sigma, 2.0)));
+            values.emplace_back(value);
         }
-        return gaussian;
+        return values;
+    }
+
+    std::vector<double> genTimePoints(int in_duration, QuaC::SamplerType in_samplerType) 
+    {
+        switch (in_samplerType)
+        {
+            case QuaC::SamplerType::Left: return arange<double>(0.0, in_duration);
+            case QuaC::SamplerType::Midpoint: return arange(0.5, 0.5 + in_duration);
+            case QuaC::SamplerType::Right: return arange<double>(1, in_duration + 1);
+        }
+        return {};
+    }
+
+    std::complex<double> gaussianPoint(double in_time, std::complex<double> in_amp, int in_center, double in_sigma)
+    {
+        return (in_amp*std::exp(-std::pow(in_time - in_center, 2) / 2.0 / std::pow(in_sigma, 2.0)));
     }
     
     std::vector<std::complex<double>> fixGaussianWidth(const std::vector<std::complex<double>>& in_gauss, const std::complex<double>& in_amp, int in_center, double in_sigma, std::optional<int> in_zeroWidth, bool in_rescaleAmp)
     {
         const int zeroedWidth = in_zeroWidth.value_or(2 * (in_center + 1));
-        const auto zeroOffset = gaussian(zeroedWidth/2, in_amp, 0, in_sigma).back();
+        const auto zeroOffset = gaussianPoint(zeroedWidth / 2, in_amp, 0, in_sigma);
         auto gaussianSamples = in_gauss;
         for (size_t i = 0; i < gaussianSamples.size(); ++i)
         {
@@ -129,13 +144,15 @@ namespace QuaC {
 
     std::vector<std::complex<double>> Drag(int in_duration, std::complex<double> in_amp, int in_sigma, double in_beta, bool in_zeroEnded, SamplerType in_sampler)
     {
-        // TODO: implement different sampling mechanisms (left, right, midpoint)
+        const auto timePoints = genTimePoints(in_duration, in_sampler);
+        assert(timePoints.size() == in_duration);
         std::vector<std::complex<double>> gaussian;
         gaussian.reserve(in_duration);
         const int mu = in_duration/2;
-        for (int i = 0; i < in_duration; ++i)
+        for (const auto& sampleTime :  timePoints)
         {
-            gaussian.emplace_back(in_amp*std::exp(-std::pow(1.0*i - mu, 2) / 2.0 / std::pow(in_sigma, 2.0)));
+            const auto x = (sampleTime - mu)/ in_sigma;
+            gaussian.emplace_back(in_amp*std::exp(-(x*x/2.0)));
         }
 
         const std::optional<int> zeroedWidth = in_zeroEnded ? (in_duration + 2) : std::optional<int>();
@@ -143,11 +160,11 @@ namespace QuaC {
         // Fix Gaussian width
         gaussian =  fixGaussianWidth(gaussian, in_amp, mu, in_sigma, zeroedWidth, rescaleAmp);
         
-        for (int i = 0; i < in_duration; ++i)
+        for (int i = 0; i < timePoints.size(); ++i)
         {
             const auto x = gaussian[i];
             static const std::complex<double> I {0.0, 1.0};
-            const std::complex<double> deriv_x = I*in_beta*(-(1.0*i - in_duration/2)/(in_sigma*in_sigma))*x;
+            const std::complex<double> deriv_x = I*in_beta*(-(1.0*timePoints[i] - in_duration/2)/(in_sigma*in_sigma))*x;
             gaussian[i] += deriv_x;
         }
 

@@ -336,16 +336,11 @@ TEST(PulseGenTester, testDrag)
     const std::complex<double> amp { 0.6549563501371142, 0.0 };
     const int sigma = 160;
     const double beta = -4.716276394709174;
-    const auto dragPulse = QuaC::Drag(640, amp, sigma, beta);
-    const auto comparePulseVal = [](const std::complex<double>& in_val1, const std::complex<double>& in_val2)-> bool {
-        const double realDiff = in_val1.real() != 0.0 ? (in_val2.real() - in_val1.real())/in_val1.real() : (in_val2.real() - in_val1.real());
-        const double imagDiff = in_val1.imag() != 0.0 ? (in_val2.imag() - in_val1.imag())/in_val1.imag() : (in_val2.imag() - in_val1.imag());
-        return std::abs(realDiff) < 0.01 && std::abs(imagDiff) < 0.01;
-    };
+    const auto dragPulse = QuaC::Drag(640, amp, sigma, beta, true, QuaC::SamplerType::Midpoint);
+   
     for (size_t i = 0; i < dragPulse.size(); ++i)
     {
-        std::cout << dragPulse[i] << " vs. " << REF_DRAG_PULSE[i] << "\n";
-        EXPECT_TRUE(comparePulseVal(dragPulse[i], REF_DRAG_PULSE[i]));
+        EXPECT_NEAR(std::abs(dragPulse[i] - REF_DRAG_PULSE[i]), 0.0, 1e-6);
     }
 }
 
