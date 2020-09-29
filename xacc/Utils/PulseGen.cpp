@@ -24,33 +24,25 @@ namespace {
     std::vector<std::complex<double>> fixGaussianWidth(const std::vector<std::complex<double>>& in_gauss, const std::complex<double>& in_amp, int in_center, double in_sigma, std::optional<int> in_zeroWidth, bool in_rescaleAmp)
     {
         const int zeroedWidth = in_zeroWidth.value_or(2 * (in_center + 1));
-        const auto zeroOffset = gaussian(zeroedWidth/2, in_amp, 0, in_sigma);
+        const auto zeroOffset = gaussian(zeroedWidth/2, in_amp, 0, in_sigma).back();
         auto gaussianSamples = in_gauss;
         for (size_t i = 0; i < gaussianSamples.size(); ++i)
         {
-            gaussianSamples[i] -= zeroOffset[i];
+            gaussianSamples[i] -= zeroOffset;
         }
-       
-        std::vector<double> ampScaleFactor(gaussianSamples.size(), 1.0);
+        std::complex<double> ampScaleFactor = 1.0;
         if (in_rescaleAmp)
         {
-            for (size_t i = 0; i < gaussianSamples.size(); ++i)
+            if (std::abs(in_amp - zeroOffset) != 0.0) 
             {
-                if (std::abs(in_amp - zeroOffset[i]) != 0.0) 
-                {
-                    ampScaleFactor[i] = std::abs(in_amp/(in_amp - zeroOffset[i]));
-                }
-                else
-                {
-                   ampScaleFactor[i] = 1.0;
-                }
+                ampScaleFactor = in_amp/(in_amp - zeroOffset);
             }
             for (size_t i = 0; i < gaussianSamples.size(); ++i)
             {
-                gaussianSamples[i] *= ampScaleFactor[i];
-
+                gaussianSamples[i] *= ampScaleFactor;
             }
         }
+
         return gaussianSamples;
     }
 }
