@@ -17,7 +17,24 @@ namespace QuaC {
             // delagate to the IBM remote accelerator to initialize pulse library.
             if (backendName.size() > 4 && backendName.substr(0, 4) == "ibmq") {
                 auto ibmAcc = xacc::getAccelerator("ibm:" + backendName);
-                ibmAcc->contributeInstructions();
+                // Note: we cannot handle re-initialization to a different IBM backend,
+                // since each backend will contribute a set of pulse cmd-def instructions 
+                // to the ServiceRegistry.   
+                static std::string IBM_BACKEND_NAME;
+                if (IBM_BACKEND_NAME.empty()) 
+                {
+                    // First time using this IBM backend: contribute pulse library cmd-def.
+                    ibmAcc->contributeInstructions();
+                    IBM_BACKEND_NAME = backendName;
+                }
+                else
+                {
+                    if (IBM_BACKEND_NAME != backendName)
+                    {
+                        xacc::error("Attempting to switch from backend '" + IBM_BACKEND_NAME + "' to '" + backendName + "'. This is not supported.");
+                    }
+                }
+                
                 m_systemModel = std::make_shared<PulseSystemModel>();
                 const auto backendProps = ibmAcc->getProperties().get<std::string>("config-json");
                 
