@@ -35,7 +35,7 @@ std::shared_ptr<xacc::quantum::Pulse> ParametricPulses::generatePulse(const std:
         auto sigma = j["sigma"].get<int>();
         const std::complex<double> amp { ampAsVec[0], ampAsVec[1]};
         // Beta = 0.0 (no derivative part)
-        const auto pulseSamples = QuaC::Drag(duration, amp, sigma, 0.0);
+        const auto pulseSamples = QuaC::Drag(duration, amp, sigma, 0.0, true, QuaC::SamplerType::Midpoint);
         pulseInst->setSamples(formatPulseSampleVec(pulseSamples));
         return pulseInst;
     }
