@@ -128,8 +128,8 @@ namespace QuaC {
 
         if (in_nbSamples % 2 != 0)
         {
-            // std::cout << " Requested odd number of samples : " << in_nbSamples << std::endl;
-            // std::cout << " Using " << in_nbSamples + 1 << " samples instead " << std::endl;
+            std::cout << " Requested odd number of samples : " << in_nbSamples << std::endl;
+            std::cout << " Using " << in_nbSamples + 1 << " samples instead " << std::endl;
             size_t in_nbSamples = in_nbSamples + 1;
         }
         
