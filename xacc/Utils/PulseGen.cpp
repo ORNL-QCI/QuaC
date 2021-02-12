@@ -212,18 +212,24 @@ namespace QuaC {
     // Creating pulse as a weighted expansion in the Hanning basis. 
     // Analytical Form:
     // Omega = \sum{k=1}^{K} \alpha_{k} * (1 - cos(2 * \pi * k * t) / T)
-    std::vector<double> HanningPulse(std::vector<double> alpha_vector, size_t in_nbSamples, size_t in_K, size_t in_T)
+    std::vector<double> HanningPulse(std::vector<double> alpha_vector, size_t in_nbSamples, size_t in_K, double in_T, double in_dt)
     {    
         arma::vec order;
-        arma::vec result(in_T, arma::fill::zeros);
+        arma::vec time_list(in_nbSamples, arma::fill::zeros);
+        arma::vec result(in_nbSamples, arma::fill::zeros);
+        for (size_t i = 0; i < in_nbSamples; i++){
+            time_list(i) = (i+1) * in_dt;
+        }
+        double t;
         for (size_t k = 0; k < in_K; k++) 
         {
-            order.zeros(in_T) ;
-            for (size_t t = 0; t < in_T; t++) 
+            order.zeros(in_nbSamples) ;
+            for (size_t j = 0; j < in_nbSamples; j++)
             {
-                order(t) = alpha_vector.at(k) * (1 - cos((2 * M_PI * k * t) / in_T)) ; 
+                t = time_list(j);
+                order(j) = alpha_vector.at(k) * (1 - cos((2 * M_PI * k * t) / in_T)) ; 
             }
-            result = result + order ;
+            result += order;
         }
         return arma::conv_to< std::vector<double> >::from(result);
     }
